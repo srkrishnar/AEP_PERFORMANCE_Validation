@@ -1,0 +1,11 @@
+username,password,product_id,quantity,category,search_keyword,coupon_code
+testuser1,Pass@1234,B00CP92UHU,1,electronics,laptop,SAVE10
+testuser2,Pass@1234,B0775268NR,2,clothing,shirt,WELCOME5
+testuser3,Pass@1234,B00CP92UHU,1,electronics,headphones,
+testuser4,Pass@1234,B0775268NR,3,books,python programming,BOOK20
+testuser5,Pass@1234,B00CP92UHU,1,home,coffee maker,
+testuser6,Pass@1234,B0775268NR,1,sports,running shoes,SPORT15
+testuser7,Pass@1234,B00CP92UHU,2,electronics,tablet,TECH10
+testuser8,Pass@1234,B0775268NR,1,toys,lego,
+testuser9,Pass@1234,B00CP92UHU,1,garden,plant pot,GREEN5
+testuser10,Pass@1234,B0775268NR,4,food,organic coffee,

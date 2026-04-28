@@ -1,0 +1,8 @@
+# JMeter test results and generated reports
+results/
+
+# JMeter backup files
+**/*.jmx.bak
+
+# macOS
+.DS_Store
