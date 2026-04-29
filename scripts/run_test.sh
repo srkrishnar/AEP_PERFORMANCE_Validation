@@ -211,6 +211,7 @@ run_single() {
     --run "$run_label" \
     --users "$USERS" \
     --html "$run_dir/summary.html" \
+    --log  "$run_dir/jmeter.log" \
     || true
 }
 

@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import html as html_mod
 import re
 import sys
 from collections import defaultdict
@@ -136,6 +137,124 @@ def _perf_label(p90: float, sla: int) -> tuple[str, str]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Log parsing
+# ─────────────────────────────────────────────────────────────────────────────
+
+def parse_log(path: Path | None) -> list[dict]:
+    """Return list of {ts, level, source, message} dicts from jmeter.log."""
+    if not path or not path.exists():
+        return []
+    entries = []
+    pattern = re.compile(
+        r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+)\s+(INFO|WARN|ERROR|DEBUG)\s+(\S+):\s+(.*)'
+    )
+    current: dict | None = None
+    with path.open(encoding="utf-8", errors="replace") as f:
+        for line in f:
+            line = line.rstrip()
+            m = pattern.match(line)
+            if m:
+                if current:
+                    entries.append(current)
+                current = {
+                    "ts":      m.group(1),
+                    "level":   m.group(2),
+                    "source":  m.group(3),
+                    "message": m.group(4),
+                }
+            elif current:
+                current["message"] += "\n" + line
+    if current:
+        entries.append(current)
+    return entries
+
+
+def _log_html_section(log_path: Path | None) -> str:
+    """Build the collapsible debug log section for the HTML report."""
+    entries = parse_log(log_path)
+    if not entries:
+        return ""
+
+    # Buckets: errors/warns always shown; info filtered to useful sources
+    errors   = [e for e in entries if e["level"] == "ERROR"]
+    warns    = [e for e in entries if e["level"] == "WARN"]
+    groovy   = [e for e in entries if e["level"] == "INFO"
+                and any(k in e["source"] + e["message"]
+                        for k in ("JSR223", "Groovy", "ScriptEngine",
+                                  "TC_17", "PlaceOrder", "EX_", "ExtractFields",
+                                  "ExtractSku", "summary"))]
+    startup  = [e for e in entries if e["level"] == "INFO"
+                and "JMeter" in e["source"] and "Setting JMeter property" in e["message"]]
+
+    def _rows(items: list[dict], level_cls: str) -> str:
+        if not items:
+            return '<tr><td colspan="3" style="color:var(--text-3);font-style:italic;padding:10px">No entries</td></tr>'
+        out = ""
+        for e in items:
+            src_short = e["source"].split(".")[-1]
+            msg_escaped = html_mod.escape(e["message"])
+            # wrap long lines
+            msg_html = f'<span style="white-space:pre-wrap;font-family:var(--mono);font-size:11px">{msg_escaped}</span>'
+            out += f"""<tr>
+              <td style="white-space:nowrap;color:var(--text-3);font-size:10px;font-family:var(--mono);padding:5px 8px">{html_mod.escape(e["ts"])}</td>
+              <td style="padding:5px 8px"><span class="log-badge log-{level_cls}">{e["level"]}</span></td>
+              <td style="padding:5px 8px;color:var(--text-3);font-size:10px">{html_mod.escape(src_short)}</td>
+              <td style="padding:5px 8px">{msg_html}</td>
+            </tr>"""
+        return out
+
+    def _panel(title: str, icon: str, items: list[dict], level_cls: str,
+               open_attr: str = "") -> str:
+        count = len(items)
+        count_badge_cls = "log-error-cnt" if level_cls == "error" else \
+                          "log-warn-cnt"  if level_cls == "warn"  else "log-info-cnt"
+        return f"""
+        <details {open_attr} class="log-details">
+          <summary class="log-summary">
+            <span class="log-summary-icon">{icon}</span>
+            <span class="log-summary-title">{title}</span>
+            <span class="log-count {count_badge_cls}">{count}</span>
+            <span class="log-chevron">▶</span>
+          </summary>
+          <div class="log-table-wrap">
+            <table class="log-table">
+              <thead><tr>
+                <th style="width:160px">Timestamp</th>
+                <th style="width:60px">Level</th>
+                <th style="width:120px">Source</th>
+                <th>Message</th>
+              </tr></thead>
+              <tbody>{_rows(items, level_cls)}</tbody>
+            </table>
+          </div>
+        </details>"""
+
+    err_open  = 'open' if errors else ''
+    warn_open = 'open' if not errors and warns else ''
+
+    total_log_lines = len(entries)
+
+    return f"""
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DEBUG LOGS
+════════════════════════════════════════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title">
+    <span class="section-icon">🪵</span>Debug Logs
+    <span style="font-size:10px;font-weight:400;color:var(--text-3);margin-left:8px">
+      {total_log_lines} total log lines · click a panel to expand
+    </span>
+  </h2>
+  <div class="log-panels">
+    {_panel("Errors", "🔴", errors, "error", err_open)}
+    {_panel("Warnings", "🟡", warns, "warn", warn_open)}
+    {_panel("Groovy / JSR223 Script Output", "🟢", groovy, "info")}
+    {_panel("JMeter Startup &amp; Configuration", "🔵", startup, "info")}
+  </div>
+</section>"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Terminal output
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -193,6 +312,7 @@ def write_html(
     run: str,
     users: int,
     run_overalls: list[tuple[str, TxStats]] | None = None,
+    log_path: Path | None = None,
 ) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
 
@@ -317,6 +437,9 @@ def write_html(
             }}
           }}
         }});"""
+
+    # ── Log section ──────────────────────────────────────────────────────────
+    log_section_html = _log_html_section(log_path)
 
     # ── Status banner data ───────────────────────────────────────────────────
     verdict_icon = "✅" if ov.passed else "❌"
@@ -642,6 +765,52 @@ footer{{
   body{{font-size:11px}}
 }}
 
+/* ── Debug log panels ────────────────────────────────────────────────────── */
+.log-panels{{display:flex;flex-direction:column;gap:8px}}
+.log-details{{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;
+}}
+.log-details[open] .log-chevron{{transform:rotate(90deg)}}
+.log-summary{{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 16px;cursor:pointer;
+  user-select:none;list-style:none;
+  font-size:12px;font-weight:600;color:var(--text);
+}}
+.log-summary::-webkit-details-marker{{display:none}}
+.log-summary:hover{{background:var(--surface2)}}
+.log-summary-icon{{font-size:13px;line-height:1}}
+.log-summary-title{{flex:1}}
+.log-count{{
+  display:inline-block;padding:1px 8px;border-radius:9999px;
+  font-size:10px;font-weight:700;
+}}
+.log-error-cnt{{background:var(--red-l);color:var(--red)}}
+.log-warn-cnt {{background:var(--amber-l);color:var(--amber)}}
+.log-info-cnt {{background:var(--blue-l);color:var(--blue)}}
+.log-chevron{{font-size:9px;color:var(--text-3);transition:transform .2s;margin-left:4px}}
+.log-table-wrap{{
+  overflow-x:auto;border-top:1px solid var(--border);
+  max-height:420px;overflow-y:auto;
+}}
+.log-table{{width:100%;border-collapse:collapse;font-size:11px}}
+.log-table thead th{{
+  background:var(--surface2);padding:7px 8px;
+  text-align:left;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);
+  border-bottom:1px solid var(--border2);position:sticky;top:0;
+}}
+.log-table tbody tr{{border-bottom:1px solid var(--border)}}
+.log-table tbody tr:hover{{background:#f8fafc}}
+.log-badge{{
+  display:inline-block;padding:1px 6px;border-radius:3px;
+  font-size:9px;font-weight:700;font-family:var(--mono);letter-spacing:.04em;
+}}
+.log-error{{background:var(--red-l);color:var(--red)}}
+.log-warn {{background:var(--amber-l);color:var(--amber)}}
+.log-info {{background:var(--blue-l);color:var(--blue)}}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media(max-width:860px){{
   .exec-grid{{grid-template-columns:1fr}}
@@ -868,6 +1037,8 @@ footer{{
 </section>
 
 {trend_section}
+
+{log_section_html}
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      METRICS GUIDE
@@ -1110,8 +1281,10 @@ def main() -> None:
     parser.add_argument("--run",        default="run_01")
     parser.add_argument("--users",      type=int,   default=0)
     parser.add_argument("--html",       default="")
+    parser.add_argument("--log",        default="", help="Path to jmeter.log for debug section")
     args = parser.parse_args()
 
+    log_path = Path(args.log) if args.log else None
     paths = [Path(f) for f in args.jtl_files]
     for p in paths:
         if not p.exists():
@@ -1132,7 +1305,8 @@ def main() -> None:
                                     env=args.env, run=args.run, users=args.users)
         if args.html:
             write_html(tx, ov, out=Path(args.html), sla_ms=args.sla,
-                       max_err=args.error_rate, env=args.env, run=args.run, users=args.users)
+                       max_err=args.error_rate, env=args.env, run=args.run,
+                       users=args.users, log_path=log_path)
             print(f"  HTML report → {args.html}")
     else:
         run_overalls: list[tuple[str, TxStats]] = []
