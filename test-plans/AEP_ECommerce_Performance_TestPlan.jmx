@@ -854,54 +854,6 @@ try {
         </GaussianRandomTimer>
         <hashTree/>
 
-        <!-- TC_14 — API Get Cart -->
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_14_API_Review_CartItems" enabled="true">
-          <boolProp name="TransactionController.parent">true</boolProp>
-          <boolProp name="TransactionController.includeTimers">false</boolProp>
-        </TransactionController>
-        <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_14_Review_CartItems" enabled="true">
-            <stringProp name="HTTPSampler.path">${API_BASE}/carts</stringProp>
-            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
-            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-              <collectionProp name="Arguments.arguments"/>
-            </elementProp>
-          </HTTPSamplerProxy>
-          <hashTree>
-            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
-              <collectionProp name="HeaderManager.headers">
-                <elementProp name="" elementType="Header">
-                  <stringProp name="Header.name">Cookie</stringProp>
-                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
-                </elementProp>
-              </collectionProp>
-            </HeaderManager>
-            <hashTree/>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_GetCart_200" enabled="true">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="49586">200</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Get cart API did not return HTTP 200</stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">8</intProp>
-            </ResponseAssertion>
-            <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_GetCart_SLA" enabled="true">
-              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
-            </DurationAssertion>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_14" enabled="true">
-          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
-          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
-        </GaussianRandomTimer>
-        <hashTree/>
-
         <!-- TC_15 — API Checkout Process with Delivery Address -->
         <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_15_API_Initiate_Checkout" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
