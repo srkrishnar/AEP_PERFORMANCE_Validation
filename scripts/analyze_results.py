@@ -117,7 +117,8 @@ def build_stats(rows: list[dict], sla_ms: int, max_err: float) -> tuple[list[TxS
         )
 
     tx = [_stat(lbl, sr) for lbl, sr in sorted(by_label.items()) if lbl.startswith("TC_")]
-    return tx, _stat("OVERALL", rows)
+    tc_rows = [r for r in rows if r.get("label", "").startswith("TC_")]
+    return tx, _stat("OVERALL", tc_rows)
 
 
 def build_sample_logs(rows: list[dict]) -> dict[str, list[dict]]:
