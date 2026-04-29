@@ -995,7 +995,7 @@ try {
               <collectionProp name="Arguments.arguments">
                 <elementProp name="" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">${ORDER_BODY}</stringProp>
+                  <stringProp name="Argument.value">${__P(ORDER_BODY,{})}</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
               </collectionProp>
@@ -1023,10 +1023,10 @@ try {
     deliveryAddress: slurper.parseText(deliveryAddrStr)
   ]
   def bodyJson = JsonOutput.toJson(body)
-  vars.put('ORDER_BODY', bodyJson)
-  log.info("TC_17 PRE: ORDER_BODY built OK — ${bodyJson.length()} chars")
+  props.put('ORDER_BODY', bodyJson)
+  log.info("TC_17 PRE: ORDER_BODY stored in props — ${bodyJson.length()} chars")
 } catch (Exception e) {
-  vars.put('ORDER_BODY', '{}')
+  props.put('ORDER_BODY', '{}')
   log.warn("TC_17 PRE: failed to build ORDER_BODY — ${e.message}")
 }
               </stringProp>
