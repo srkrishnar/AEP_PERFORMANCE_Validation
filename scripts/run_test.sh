@@ -3,8 +3,7 @@
 # run_test.sh — AEP Performance Test Runner
 # =============================================================================
 #
-# Executes a JMeter test plan against a target environment, supports multiple
-# load profiles, repeated runs, and optional parallel execution.
+# Executes a JMeter test plan against a target environment.
 #
 # USAGE
 #   ./run_test.sh [OPTIONS]
@@ -14,27 +13,25 @@
 #   -p  PLAN          Test plan filename in test-plans/
 #                     (default: AEP_ECommerce_Performance_TestPlan.jmx)
 #   -u  USERS         Virtual user count: 5 | 10 | 15 | <any int>  (default: 5)
+#   -i  ITERATIONS    How many times each user runs the full journey (default: 1)
+#                     e.g. -u 5 -i 3  →  5 users × 3 loops = 15 hits per TC
 #   -r  RAMP          Ramp-up period in seconds                     (default: env preset)
-#   -d  DURATION      Test duration in seconds                      (default: env preset)
-#   -i  ITERATIONS    Number of sequential test runs                (default: 1)
-#   -P               Run iterations in PARALLEL instead of sequentially
+#   -R  RUNS          Number of separate sequential JMeter runs     (default: 1)
+#   -P               Run separate runs in PARALLEL instead of sequentially
 #   -H  HOST          Override host (ignores env preset)
 #   -O  PORT          Override port (ignores env preset)
 #   -S  PROTOCOL      Override protocol http|https
 #   -h               Show this help and exit
 #
 # EXAMPLES
-#   # Smoke check on QA with 5 users
-#   ./run_test.sh -e qa -u 5 -d 60
+#   # 5 users, each loops 3 times  →  15 hits per TC in one run
+#   ./run_test.sh -e qa -u 5 -i 3
 #
-#   # Full load run: 10 users, 5-minute soak, 3 sequential iterations
-#   ./run_test.sh -e qa -u 10 -d 300 -i 3
+#   # 10 users × 1 loop, repeated 3 times as separate runs
+#   ./run_test.sh -e qa -u 10 -R 3
 #
-#   # Stress test: 15 users, 3 parallel runs
-#   ./run_test.sh -e qa -u 15 -d 300 -i 3 -P
-#
-#   # Override host at runtime
-#   ./run_test.sh -e qa -u 10 -H 10.0.0.99 -O 8080 -S http
+#   # 15 users × 2 loops, 3 parallel separate runs
+#   ./run_test.sh -e qa -u 15 -i 2 -R 3 -P
 # =============================================================================
 
 set -euo pipefail
@@ -54,9 +51,10 @@ PLANS_DIR="$PROJECT_DIR/test-plans"
 ENV_NAME="qa"
 PLAN="AEP_ECommerce_Performance_TestPlan.jmx"
 USERS="5"
+LOOP_COUNT="1"
 RAMP_OVERRIDE=""
 DURATION_OVERRIDE=""
-ITERATIONS="1"
+RUNS="1"
 PARALLEL=false
 HOST_OVERRIDE=""
 PORT_OVERRIDE=""
@@ -90,14 +88,14 @@ validate_users() {
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
-while getopts "e:p:u:r:d:i:PH:O:S:h" opt; do
+while getopts "e:p:u:i:r:R:PH:O:S:h" opt; do
   case $opt in
     e) ENV_NAME="$OPTARG" ;;
     p) PLAN="$OPTARG" ;;
     u) USERS="$OPTARG" ;;
+    i) LOOP_COUNT="$OPTARG" ;;
     r) RAMP_OVERRIDE="$OPTARG" ;;
-    d) DURATION_OVERRIDE="$OPTARG" ;;
-    i) ITERATIONS="$OPTARG" ;;
+    R) RUNS="$OPTARG" ;;
     P) PARALLEL=true ;;
     H) HOST_OVERRIDE="$OPTARG" ;;
     O) PORT_OVERRIDE="$OPTARG" ;;
@@ -160,9 +158,9 @@ log_info "  Environment  : $(echo "$ENV_NAME" | tr '[:lower:]' '[:upper:]')"
 log_info "  Target       : ${PROTOCOL}://${HOST}:${PORT}"
 log_info "  Plan         : $PLAN"
 log_info "  Virtual Users: $USERS"
+log_info "  Loops/User   : $LOOP_COUNT  (total hits per TC = $((USERS * LOOP_COUNT)))"
 log_info "  Ramp-up      : ${RAMP}s"
-log_info "  Duration     : ${DURATION}s"
-log_info "  Iterations   : $ITERATIONS  $([ "$PARALLEL" = true ] && echo "(PARALLEL)" || echo "(sequential)")"
+log_info "  Separate Runs: $RUNS  $([ "$PARALLEL" = true ] && echo "(PARALLEL)" || echo "(sequential)")"
 log_info "  SLA          : ${SLA}ms"
 log_info "  Session Cookie: $([ -n "$SESSION_COOKIE" ] && echo "SET (${#SESSION_COOKIE} chars)" || echo "NOT SET — API steps will fail")"
 log_info "  Batch ID     : $BATCH_ID"
@@ -192,6 +190,7 @@ run_single() {
     -JHOST="$HOST" \
     -JPORT="$PORT" \
     -JTHREAD_COUNT="$USERS" \
+    -JLOOP_COUNT="$LOOP_COUNT" \
     -JRAMP_UP="$RAMP" \
     -JDURATION="$DURATION" \
     -JSLA_RESPONSE_TIME="$SLA" \
@@ -216,11 +215,11 @@ run_single() {
 }
 
 # ---------------------------------------------------------------------------
-# Execute iterations
+# Execute runs
 # ---------------------------------------------------------------------------
 PIDS=()
 
-for i in $(seq 1 "$ITERATIONS"); do
+for i in $(seq 1 "$RUNS"); do
   if [[ "$PARALLEL" == true ]]; then
     run_single "$i" &
     PIDS+=($!)
@@ -242,16 +241,16 @@ if [[ "$PARALLEL" == true ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Aggregate report (only when multiple iterations ran)
+# Aggregate report (only when multiple separate runs were launched)
 # ---------------------------------------------------------------------------
-if (( ITERATIONS > 1 )); then
+if (( RUNS > 1 )); then
   echo ""
   log_banner "════════════════════════════════════════════════════════════"
-  log_banner "  Aggregate Summary — $ITERATIONS runs"
+  log_banner "  Aggregate Summary — $RUNS runs"
   log_banner "════════════════════════════════════════════════════════════"
 
   JTL_ARGS=()
-  for i in $(seq 1 "$ITERATIONS"); do
+  for i in $(seq 1 "$RUNS"); do
     run_label="$(printf "run_%02d" "$i")"
     jtl="$RESULTS_DIR/${BATCH_ID}_${run_label}/results.jtl"
     [[ -f "$jtl" ]] && JTL_ARGS+=("$jtl")
