@@ -89,14 +89,16 @@ cd "jmeter/scripts"
 # 2. Make scripts executable (first time only)
 chmod +x run_test.sh run_smoke.sh run_parallel.sh
 
-# 3. Verify connectivity — smoke test (1 user, 30 s)
-./run_smoke.sh
+# 3. Refresh your session cookie in config/env.qa.sh (expires ~30 min)
+#    Open Chrome → https://qa-aep.aziro.net → log in
+#    DevTools (F12) → Network → any API request → Request Headers → Cookie
+#    Paste the full value into PERF_SESSION_COOKIE in config/env.qa.sh
 
-# 4. Run a standard load test on QA with 10 virtual users
-./run_test.sh -e qa -u 10
+# 4. Run: 5 users, each loops 3 times → 15 hits per TC
+./run_test.sh -e qa -u 5 -i 3
 
-# 5. Open the HTML report
-open ../results/<batch_id>/summary.html
+# 5. Open the custom HTML report
+open ../results/<batch_id>_run_01/summary.html
 ```
 
 ---
@@ -130,7 +132,6 @@ TC_12  GET  /integrate/api/v1/products/similarProducts       Similar products
 PHASE 3 — API: Cart & Checkout
 ────────────────────────────────────────────
 TC_13  POST /integrate/api/v1/carts/items                    Add product to cart
-TC_14  GET  /integrate/api/v1/carts                          Get cart contents
 TC_15  GET  /integrate/api/v1/checkout/process               Checkout with delivery address
              ?includeDeliveryAddress=true
 TC_16  GET  /integrate/api/v1/delivery/addresses             Saved delivery addresses
@@ -154,99 +155,85 @@ TC_19  GET  /integrate/api/v1/orders/confirmation/{ORDER_ID} Order confirmation
 
 ## How to Run
 
-All scripts live in `jmeter/scripts/`. Run them from that directory.
-
-### Smoke Test
-
-Runs **1 virtual user for 30 seconds** — quick sanity check before any real load.
+All commands are run from the `jmeter/scripts/` directory.
 
 ```bash
-./run_smoke.sh                        # QA (default)
-./run_smoke.sh -e staging             # Staging
-./run_smoke.sh -e qa -H qa-aep.aziro.net   # Override host
+cd "jmeter/scripts"
 ```
 
 ---
 
-### Single Load Run
+### Key Flags
 
-```bash
-# Syntax
-./run_test.sh -e ENV -u USERS [OPTIONS]
-
-# Common examples
-./run_test.sh -e qa -u 5              # 5 users, QA, default 5-min duration
-./run_test.sh -e qa -u 10             # 10 users
-./run_test.sh -e qa -u 15             # 15 users
-./run_test.sh -e qa -u 10 -d 600      # 10 users, 10-minute soak
-./run_test.sh -e staging -u 10        # 10 users against staging
-```
-
-#### All flags
-
-| Flag | Description | Default |
+| Flag | What it does | Default |
 |------|-------------|---------|
-| `-e ENV` | Environment: `qa`, `staging`, `prod` | `qa` |
-| `-p PLAN` | Test plan filename inside `test-plans/` | `AEP_ECommerce_Performance_TestPlan.jmx` |
-| `-u USERS` | Virtual user count | `5` |
-| `-r RAMP` | Ramp-up seconds | env preset |
-| `-d DURATION` | Test duration seconds | env preset |
-| `-i ITERATIONS` | Number of sequential runs | `1` |
-| `-P` | Run iterations in parallel | off |
-| `-H HOST` | Override hostname | env preset |
-| `-O PORT` | Override port | env preset |
-| `-S PROTOCOL` | Override protocol `http`/`https` | env preset |
-| `-h` | Print help | — |
+| `-u` | Number of virtual users | `5` |
+| `-i` | How many times each user runs the full journey (loops) | `1` |
+| `-R` | Number of separate JMeter runs (one after another, or in parallel) | `1` |
+| `-P` | Run the `-R` separate runs in parallel instead of one by one | off |
+| `-e` | Environment: `qa`, `staging`, `prod` | `qa` |
 
-#### Overriding individual parameters at run time
+> **Hits per TC = `-u` × `-i`**
+> Example: `-u 5 -i 3` → 5 users × 3 loops = **15 hits per test case**
 
-Any variable in the test plan can be overridden with `-J`:
+---
+
+### Sequential (one after another)
+
+Each user runs the full journey from start to finish, one loop at a time.
+All users run together inside a single JMeter process.
 
 ```bash
-# Change SKU and order ID for a specific run
-./run_test.sh -e qa -u 5 \
-  -JPRODUCT_SKU=B000G250SO \
-  -JORDER_ID=10168 \
-  -JSLA_RESPONSE_TIME=2000
+# 5 users, each loops 3 times → 15 hits per TC — ONE report
+./run_test.sh -e qa -u 5 -i 3
+
+# 10 users, each loops once → 10 hits per TC
+./run_test.sh -e qa -u 10
+
+# 5 users × 3 loops, repeated as 2 separate runs (run_01, run_02)
+# Each report will show 15 hits. An aggregate report is also generated.
+./run_test.sh -e qa -u 5 -i 3 -R 2
+```
+
+**Reports saved to:**
+```
+results/<batch_id>_run_01/summary.html
+results/<batch_id>_run_02/summary.html   ← only if -R 2 or more
+results/<batch_id>_aggregate/summary.html ← only if -R 2 or more
 ```
 
 ---
 
-### Repeated Runs
+### Parallel (all runs at the same time)
 
-Use `-i` to run the same plan multiple times and capture trend data.
+Use `-P` together with `-R` to launch multiple JMeter runs simultaneously.
+Useful for stress testing or comparing how the server handles concurrent load.
 
 ```bash
-# 3 sequential runs — baseline consistency
-./run_test.sh -e qa -u 10 -d 300 -i 3
-
-# 3 parallel runs — stress / concurrency
-./run_test.sh -e qa -u 10 -d 300 -i 3 -P
-
-# 5 runs, 1 user each — long soak over 25 minutes
-./run_test.sh -e qa -u 1 -d 300 -i 5
+# 3 separate runs all firing at the same time
+# Each run: 5 users × 3 loops = 15 hits per TC
+./run_test.sh -e qa -u 5 -i 3 -R 3 -P
 ```
 
-Each iteration creates its own result folder (`run_01`, `run_02`, etc.).
-An aggregate report is automatically generated after all iterations complete.
+**Reports saved to:**
+```
+results/<batch_id>_run_01/summary.html
+results/<batch_id>_run_02/summary.html
+results/<batch_id>_run_03/summary.html
+results/<batch_id>_aggregate/summary.html
+```
 
 ---
 
-### Parallel Load Tiers
+### Quick Reference
 
-Run the system at 5, 10, and 15 virtual users simultaneously to build a
-capacity curve in a single session.
-
-```bash
-# Default: 5 / 10 / 15 users, 5 min each, QA
-./run_parallel.sh
-
-# Custom tiers, 2 min each
-./run_parallel.sh -e staging -d 120 -l "5 10"
-
-# 2 iterations per tier
-./run_parallel.sh -e qa -d 300 -i 2
-```
+| What you want | Command |
+|---------------|---------|
+| 5 users, 1 loop → 5 hits | `./run_test.sh -e qa -u 5` |
+| 5 users, 3 loops → **15 hits** | `./run_test.sh -e qa -u 5 -i 3` |
+| 10 users, 3 loops → **30 hits** | `./run_test.sh -e qa -u 10 -i 3` |
+| 3 separate runs, one by one | `./run_test.sh -e qa -u 5 -i 3 -R 3` |
+| 3 separate runs, all at once | `./run_test.sh -e qa -u 5 -i 3 -R 3 -P` |
 
 ---
 
@@ -272,17 +259,16 @@ All parameters can be overridden at runtime via `-J` JMeter flags.
 | `PROTOCOL` | `https` | `http` or `https` |
 | `HOST` | `qa-aep.aziro.net` | Target hostname |
 | `PORT` | `443` | Target port |
-| `THREAD_COUNT` | `5` | Virtual users |
+| `THREAD_COUNT` | `5` | Virtual users (set by `-u`) |
+| `LOOP_COUNT` | `1` | Journey loops per user (set by `-i`) |
 | `RAMP_UP` | `10` | Ramp-up period (seconds) |
-| `DURATION` | `300` | Test duration (seconds) |
-| `THINK_TIME_MEAN` | `1000` | Mean think time (ms) |
-| `THINK_TIME_DEV` | `500` | Think time standard deviation (ms) |
+| `DURATION` | `600` | Max test duration guard (seconds) |
+| `THINK_TIME_MEAN` | `500` | Mean think time between steps (ms) |
+| `THINK_TIME_DEV` | `200` | Think time standard deviation (ms) |
 | `CONNECT_TIMEOUT` | `10000` | Connection timeout (ms) |
 | `RESPONSE_TIMEOUT` | `30000` | Response timeout (ms) |
 | `SLA_RESPONSE_TIME` | `3000` | P90 pass/fail threshold (ms) |
-| `API_BASE` | `/integrate/api/v1` | API path prefix |
-| `PRODUCT_SKU` | `B000G250SO` | SKU used in product + cart steps |
-| `ORDER_ID` | `10168` | Order ID used in confirmation step |
+| `SESSION_COOKIE` | — | Full browser cookie string for auth (see below) |
 
 ---
 
@@ -508,6 +494,24 @@ jobs:
     artifactName: 'perf-reports'
   condition: always()
 ```
+
+---
+
+## Session Cookie (Authentication)
+
+API steps TC_13 through TC_19 require an authenticated session.
+The `SESSION_COOKIE` expires roughly every 30 minutes, so refresh it before each test run.
+
+**How to get a fresh cookie:**
+
+1. Open Chrome → `https://qa-aep.aziro.net` → log in with the test account
+2. Open DevTools (`F12`) → **Network** tab → click any API request (e.g. `/profile`)
+3. Go to **Request Headers** → find `Cookie:` → copy the entire value
+4. Paste it into `config/env.qa.sh` as `PERF_SESSION_COOKIE="<paste here>"`
+
+**Signs the cookie has expired:**
+- TC_13 (Add to Cart) returns 401
+- TC_17 (Submit Order) shows 0 ms / 0 requests
 
 ---
 
