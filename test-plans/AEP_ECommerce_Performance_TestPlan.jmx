@@ -596,12 +596,12 @@
         <hashTree/>
 
         <!-- TC_10 — API Category Tree -->
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_10_API_CategoryTree" enabled="true">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_10_API_Browse_ProductCategories" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_10_CategoryTree" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_10_Browse_ProductCategories" enabled="true">
             <stringProp name="HTTPSampler.path">${API_BASE}/categories/categoryTree</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -828,12 +828,12 @@
         <hashTree/>
 
         <!-- TC_14 — API Get Cart -->
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_14_API_GetCart" enabled="true">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_14_API_Review_CartItems" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_14_Cart" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_14_Review_CartItems" enabled="true">
             <stringProp name="HTTPSampler.path">${API_BASE}/carts</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -876,12 +876,12 @@
         <hashTree/>
 
         <!-- TC_15 — API Checkout Process with Delivery Address -->
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_15_API_CheckoutProcess" enabled="true">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_15_API_Initiate_Checkout" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_15_CheckoutProcess" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_15_Initiate_Checkout" enabled="true">
             <stringProp name="HTTPSampler.path">${API_BASE}/checkout/process</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -953,12 +953,12 @@ try {
         <hashTree/>
 
         <!-- TC_16 — API Delivery Addresses -->
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_16_API_DeliveryAddresses" enabled="true">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_16_API_Select_DeliveryAddress" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_16_DeliveryAddresses" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_16_Select_DeliveryAddress" enabled="true">
             <stringProp name="HTTPSampler.path">${API_BASE}/delivery/addresses</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -1001,12 +1001,12 @@ try {
         <hashTree/>
 
         <!-- TC_17 — API Place Order (POST) -->
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_17_API_PlaceOrder" enabled="true">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_17_API_Submit_Order" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_POST_17_PlaceOrder" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_POST_17_Submit_Order" enabled="true">
             <stringProp name="HTTPSampler.path">${API_BASE}/orders/place</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -1060,12 +1060,12 @@ try {
              ───────────────────────────────────────────────────────────────── -->
 
         <!-- TC_18 — API User Profile -->
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_18_API_Profile" enabled="true">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_18_API_View_UserProfile" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_18_Profile" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_18_View_UserProfile" enabled="true">
             <stringProp name="HTTPSampler.path">${API_BASE}/profile</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
