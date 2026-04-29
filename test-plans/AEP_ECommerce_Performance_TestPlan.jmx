@@ -795,11 +795,15 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie_And_ContentType" enabled="true">
               <collectionProp name="HeaderManager.headers">
                 <elementProp name="" elementType="Header">
                   <stringProp name="Header.name">Cookie</stringProp>
                   <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Content-Type</stringProp>
+                  <stringProp name="Header.value">application/json</stringProp>
                 </elementProp>
               </collectionProp>
             </HeaderManager>
@@ -811,7 +815,7 @@
               </collectionProp>
               <stringProp name="Assertion.custom_message">FAIL: Add to cart did not return HTTP 200 or 201</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
+              <boolProp name="Assertion.assume_success">true</boolProp>
               <intProp name="Assertion.test_type">40</intProp>
             </ResponseAssertion>
             <hashTree/>
@@ -914,7 +918,7 @@
               </collectionProp>
               <stringProp name="Assertion.custom_message">FAIL: Checkout process API did not return HTTP 200</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
+              <boolProp name="Assertion.assume_success">true</boolProp>
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
@@ -1023,11 +1027,15 @@ try {
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie_And_ContentType" enabled="true">
               <collectionProp name="HeaderManager.headers">
                 <elementProp name="" elementType="Header">
                   <stringProp name="Header.name">Cookie</stringProp>
                   <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Content-Type</stringProp>
+                  <stringProp name="Header.value">application/json</stringProp>
                 </elementProp>
               </collectionProp>
             </HeaderManager>
@@ -1039,7 +1047,7 @@ try {
               </collectionProp>
               <stringProp name="Assertion.custom_message">FAIL: Place order API did not return HTTP 200 or 201</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
+              <boolProp name="Assertion.assume_success">true</boolProp>
               <intProp name="Assertion.test_type">40</intProp>
             </ResponseAssertion>
             <hashTree/>
