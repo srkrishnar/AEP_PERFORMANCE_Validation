@@ -1,8 +1,9 @@
 # AEP ECommerce — Performance Test Suite
 
 End-to-end performance test framework for the AEP ECommerce platform.
-Built on Apache JMeter 5.6+, with environment-aware configuration, parameterised
-load profiles, parallel execution, and automated HTML reporting.
+Built on Apache JMeter 5.6+, covering the complete user journey from browsing
+through checkout and order confirmation, with environment-aware configuration,
+parameterised load profiles, and automated HTML reporting.
 
 ---
 
@@ -11,19 +12,20 @@ load profiles, parallel execution, and automated HTML reporting.
 1. [Folder Structure](#folder-structure)
 2. [Prerequisites](#prerequisites)
 3. [Quick Start](#quick-start)
-4. [Environment Configuration](#environment-configuration)
-5. [Running Tests](#running-tests)
+4. [Test Journey — End-to-End Flow](#test-journey--end-to-end-flow)
+5. [How to Run](#how-to-run)
    - [Smoke Test](#smoke-test)
    - [Single Load Run](#single-load-run)
-   - [Repeated Runs (iterations)](#repeated-runs-iterations)
+   - [Repeated Runs](#repeated-runs)
    - [Parallel Load Tiers](#parallel-load-tiers)
 6. [Load Profiles](#load-profiles)
 7. [Test Plan Parameters](#test-plan-parameters)
-8. [Results & Reports](#results--reports)
-9. [Analyzing Results](#analyzing-results)
-10. [Test Data](#test-data)
-11. [CI/CD Integration](#cicd-integration)
-12. [Troubleshooting](#troubleshooting)
+8. [Security Standards](#security-standards)
+9. [Results and Reports](#results-and-reports)
+10. [Analyzing Results](#analyzing-results)
+11. [Test Data](#test-data)
+12. [CI/CD Integration](#cicd-integration)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -32,7 +34,7 @@ load profiles, parallel execution, and automated HTML reporting.
 ```
 jmeter/
 ├── test-plans/
-│   └── AEP_ECommerce_Performance_TestPlan.jmx   # Generic test plan
+│   └── AEP_ECommerce_Performance_TestPlan.jmx   # Main test plan (19 TCs)
 │
 ├── scripts/
 │   ├── run_test.sh          # Main test runner (env-aware, parameterised)
@@ -51,9 +53,9 @@ jmeter/
 │       ├── results.jtl      # Raw JMeter CSV data
 │       ├── jmeter.log       # JMeter execution log
 │       ├── stdout.log       # Process stdout
-│       ├── summary.html     # Custom HTML report (this framework)
-│       └── html-report/     # JMeter built-in HTML dashboard
-│           └── index.html
+│       ├── summary.html     # AEP custom HTML report
+│       └── html-report/
+│           └── index.html   # JMeter built-in HTML dashboard
 │
 ├── lib/                     # Custom JMeter plugin JARs
 └── README.md
@@ -87,7 +89,7 @@ cd "jmeter/scripts"
 # 2. Make scripts executable (first time only)
 chmod +x run_test.sh run_smoke.sh run_parallel.sh
 
-# 3. Verify connectivity with a smoke test (1 user, 30 s)
+# 3. Verify connectivity — smoke test (1 user, 30 s)
 ./run_smoke.sh
 
 # 4. Run a standard load test on QA with 10 virtual users
@@ -99,55 +101,69 @@ open ../results/<batch_id>/summary.html
 
 ---
 
-## Environment Configuration
+## Test Journey — End-to-End Flow
 
-Environment files live in `config/` and define target URL, ports, SLA thresholds,
-and default load parameters. They are sourced automatically by the run scripts.
+The test plan simulates a complete customer journey in strict order.
+Every step has a **200 OK assertion** and a **3-second SLA assertion**.
+API steps additionally carry a **JSON path assertion** where the field is
+deterministic.
 
-| File | Environment | Base URL |
-|------|------------|----------|
-| `env.qa.sh` | QA | `https://qa-aep.aziro.net/` |
-| `env.staging.sh` | Staging | `https://staging-aep.aziro.net/` |
-| `env.prod.sh` | Production | `https://aep.aziro.net/` |
-
-### Environment variables set by each file
-
-| Variable | Description |
-|----------|-------------|
-| `PERF_PROTOCOL` | `http` or `https` |
-| `PERF_HOST` | Target hostname |
-| `PERF_PORT` | Target port |
-| `PERF_SLA_RESPONSE_TIME` | P90 SLA threshold (ms) |
-| `PERF_CONNECT_TIMEOUT` | Connection timeout (ms) |
-| `PERF_RESPONSE_TIMEOUT` | Response timeout (ms) |
-| `PERF_THINK_TIME_MEAN` | Mean think time between requests (ms) |
-| `PERF_THINK_TIME_DEV` | Think time deviation (ms) |
-| `PERF_THREAD_COUNT` | Default virtual user count |
-| `PERF_RAMP_UP` | Default ramp-up seconds |
-| `PERF_DURATION` | Default test duration seconds |
-
-You can also source an env file directly in your shell:
-
-```bash
-source config/env.qa.sh
-echo $PERF_HOST   # → qa-aep.aziro.net
 ```
+PHASE 1 — Browse / Merchandising (UI layer)
+────────────────────────────────────────────
+TC_01  GET  /merchandise                                     Merchandise landing page
+TC_02  GET  /merchandise/shop                                Shop default listing
+TC_03  GET  /merchandise/shop?sort=price_asc                 Sort by price ascending
+TC_04  GET  /merchandise/shop?sort=price_desc                Sort by price descending
+TC_05  GET  /merchandise/shop?sort=rating_desc               Sort by rating
+TC_06  GET  /merchandise/shop?q=mobile                       Keyword search
+TC_07  GET  /merchandise/mobile-and-accessories-…            Category: Smartphones
+TC_08  GET  /merchandise/mobile-and-accessories-…-apple      Sub-category: Apple
+TC_09  GET  /merchandise/apparel                             Category: Apparel
+
+PHASE 2 — API: Category & Product Discovery
+────────────────────────────────────────────
+TC_10  GET  /integrate/api/v1/categories/categoryTree        Full category tree
+TC_11  GET  /integrate/api/v1/products/sku/{SKU}             Product detail by SKU
+TC_12  GET  /integrate/api/v1/products/similarProducts       Similar products
+
+PHASE 3 — API: Cart & Checkout
+────────────────────────────────────────────
+TC_13  POST /integrate/api/v1/carts/items                    Add product to cart
+TC_14  GET  /integrate/api/v1/carts                          Get cart contents
+TC_15  GET  /integrate/api/v1/checkout/process               Checkout with delivery address
+             ?includeDeliveryAddress=true
+TC_16  GET  /integrate/api/v1/delivery/addresses             Saved delivery addresses
+TC_17  POST /integrate/api/v1/orders/place                   Place the order
+
+PHASE 4 — API: Post-Order
+────────────────────────────────────────────
+TC_18  GET  /integrate/api/v1/profile                        User profile
+TC_19  GET  /integrate/api/v1/orders/confirmation/{ORDER_ID} Order confirmation
+```
+
+### Assertions per step
+
+| Assertion type | Applied to | Validates |
+|----------------|-----------|-----------|
+| Response Code  | All 19 TCs | HTTP 200 (or 200/201 for POSTs) |
+| Duration SLA   | All 19 TCs | Response time ≤ `SLA_RESPONSE_TIME` (default 3000 ms) |
+| JSON Path      | TC_10, TC_11, TC_19 | Response body contains expected field |
 
 ---
 
-## Running Tests
+## How to Run
 
 All scripts live in `jmeter/scripts/`. Run them from that directory.
 
 ### Smoke Test
 
-Runs 1 virtual user for 30 seconds to verify the target is reachable and all
-endpoints respond correctly. Run this before any load test.
+Runs **1 virtual user for 30 seconds** — quick sanity check before any real load.
 
 ```bash
-./run_smoke.sh                     # QA (default)
-./run_smoke.sh -e staging          # Staging
-./run_smoke.sh -e qa -H 10.0.0.50  # Override host
+./run_smoke.sh                        # QA (default)
+./run_smoke.sh -e staging             # Staging
+./run_smoke.sh -e qa -H qa-aep.aziro.net   # Override host
 ```
 
 ---
@@ -158,12 +174,12 @@ endpoints respond correctly. Run this before any load test.
 # Syntax
 ./run_test.sh -e ENV -u USERS [OPTIONS]
 
-# Examples
-./run_test.sh -e qa -u 5             # 5 users, QA, env-default duration
-./run_test.sh -e qa -u 10            # 10 users
-./run_test.sh -e qa -u 15            # 15 users
-./run_test.sh -e qa -u 10 -d 600     # 10 users, 10-minute soak
-./run_test.sh -e staging -u 10       # 10 users against staging
+# Common examples
+./run_test.sh -e qa -u 5              # 5 users, QA, default 5-min duration
+./run_test.sh -e qa -u 10             # 10 users
+./run_test.sh -e qa -u 15             # 15 users
+./run_test.sh -e qa -u 10 -d 600      # 10 users, 10-minute soak
+./run_test.sh -e staging -u 10        # 10 users against staging
 ```
 
 #### All flags
@@ -171,37 +187,48 @@ endpoints respond correctly. Run this before any load test.
 | Flag | Description | Default |
 |------|-------------|---------|
 | `-e ENV` | Environment: `qa`, `staging`, `prod` | `qa` |
-| `-p PLAN` | Test plan filename (inside `test-plans/`) | `AEP_ECommerce_Performance_TestPlan.jmx` |
-| `-u USERS` | Virtual user count: `5`, `10`, `15` or any int | `5` |
+| `-p PLAN` | Test plan filename inside `test-plans/` | `AEP_ECommerce_Performance_TestPlan.jmx` |
+| `-u USERS` | Virtual user count | `5` |
 | `-r RAMP` | Ramp-up seconds | env preset |
 | `-d DURATION` | Test duration seconds | env preset |
-| `-i ITERATIONS` | Number of sequential test runs | `1` |
-| `-P` | Run iterations in parallel instead of sequentially | off |
+| `-i ITERATIONS` | Number of sequential runs | `1` |
+| `-P` | Run iterations in parallel | off |
 | `-H HOST` | Override hostname | env preset |
 | `-O PORT` | Override port | env preset |
 | `-S PROTOCOL` | Override protocol `http`/`https` | env preset |
-| `-h` | Print help and exit | — |
+| `-h` | Print help | — |
+
+#### Overriding individual parameters at run time
+
+Any variable in the test plan can be overridden with `-J`:
+
+```bash
+# Change SKU and order ID for a specific run
+./run_test.sh -e qa -u 5 \
+  -JPRODUCT_SKU=B000G250SO \
+  -JORDER_ID=10168 \
+  -JSLA_RESPONSE_TIME=2000
+```
 
 ---
 
-### Repeated Runs (iterations)
+### Repeated Runs
 
-Use `-i` to run the same test plan multiple times and get trend data and
-averaged metrics. Runs are sequential by default; add `-P` for parallel.
+Use `-i` to run the same plan multiple times and capture trend data.
 
 ```bash
-# 3 sequential runs — useful for baseline consistency checks
+# 3 sequential runs — baseline consistency
 ./run_test.sh -e qa -u 10 -d 300 -i 3
 
-# 3 parallel runs — maximises concurrency for stress testing
+# 3 parallel runs — stress / concurrency
 ./run_test.sh -e qa -u 10 -d 300 -i 3 -P
 
-# 5 runs, 1 user each — soak over 25 minutes
+# 5 runs, 1 user each — long soak over 25 minutes
 ./run_test.sh -e qa -u 1 -d 300 -i 5
 ```
 
-Each iteration produces its own result folder (`run_01`, `run_02`, etc.).
-After all iterations complete, an aggregate report is automatically generated.
+Each iteration creates its own result folder (`run_01`, `run_02`, etc.).
+An aggregate report is automatically generated after all iterations complete.
 
 ---
 
@@ -211,20 +238,14 @@ Run the system at 5, 10, and 15 virtual users simultaneously to build a
 capacity curve in a single session.
 
 ```bash
-# Default: 5 / 10 / 15 users, 5 min each, on QA
+# Default: 5 / 10 / 15 users, 5 min each, QA
 ./run_parallel.sh
 
 # Custom tiers, 2 min each
 ./run_parallel.sh -e staging -d 120 -l "5 10"
 
-# 2 iterations per tier in parallel
+# 2 iterations per tier
 ./run_parallel.sh -e qa -d 300 -i 2
-
-# All flags
-#   -e ENV       Environment
-#   -d DURATION  Seconds per tier
-#   -i ITER      Iterations per tier
-#   -l "N M ..."  Space-separated user tiers (quoted)
 ```
 
 ---
@@ -233,22 +254,21 @@ capacity curve in a single session.
 
 | Profile | Users | Ramp | Duration | Use case |
 |---------|-------|------|----------|----------|
-| Smoke | 1 | 1s | 30s | Connectivity check |
-| Light | 5 | 10s | 300s | Pre-release sanity |
-| Standard | 10 | 15s | 300s | Sprint regression |
-| Heavy | 15 | 20s | 300s | Release validation |
-| Soak | 10 | 15s | 3600s | Overnight stability |
-| Stress | 15 | 10s | 600s | Breaking-point search |
+| Smoke | 1 | 1 s | 30 s | Connectivity sanity check |
+| Light | 5 | 10 s | 300 s | Pre-release sanity |
+| Standard | 10 | 15 s | 300 s | Sprint regression |
+| Heavy | 15 | 20 s | 300 s | Release validation |
+| Soak | 10 | 15 s | 3600 s | Overnight stability |
+| Stress | 15 | 10 s | 600 s | Breaking-point search |
 
 ---
 
 ## Test Plan Parameters
 
-All parameters in the JMX can be overridden at runtime via `-J` JMeter flags
-(handled automatically by `run_test.sh`).
+All parameters can be overridden at runtime via `-J` JMeter flags.
 
-| Parameter | QA Default | Description |
-|-----------|-----------|-------------|
+| Parameter | Default (QA) | Description |
+|-----------|-------------|-------------|
 | `PROTOCOL` | `https` | `http` or `https` |
 | `HOST` | `qa-aep.aziro.net` | Target hostname |
 | `PORT` | `443` | Target port |
@@ -256,26 +276,92 @@ All parameters in the JMX can be overridden at runtime via `-J` JMeter flags
 | `RAMP_UP` | `10` | Ramp-up period (seconds) |
 | `DURATION` | `300` | Test duration (seconds) |
 | `THINK_TIME_MEAN` | `1000` | Mean think time (ms) |
-| `THINK_TIME_DEV` | `500` | Think time deviation (ms) |
+| `THINK_TIME_DEV` | `500` | Think time standard deviation (ms) |
 | `CONNECT_TIMEOUT` | `10000` | Connection timeout (ms) |
 | `RESPONSE_TIMEOUT` | `30000` | Response timeout (ms) |
 | `SLA_RESPONSE_TIME` | `3000` | P90 pass/fail threshold (ms) |
-| `PRODUCT_ID_1` | `B00CP92UHU` | Test product ID 1 |
-| `PRODUCT_ID_2` | `B0775268NR` | Test product ID 2 |
+| `API_BASE` | `/integrate/api/v1` | API path prefix |
+| `PRODUCT_SKU` | `B000G250SO` | SKU used in product + cart steps |
+| `ORDER_ID` | `10168` | Order ID used in confirmation step |
 
 ---
 
-## Results & Reports
+## Security Standards
+
+These standards apply to all performance test runs. Failure to follow them
+risks exposing production data, triggering rate-limits, or violating compliance.
+
+### Authentication & Credentials
+
+- **Never hard-code** tokens, passwords, or API keys in the `.jmx` file or
+  scripts. Use environment variables or a secrets manager.
+- Store test credentials in `config/test_data.csv` and ensure the file is
+  listed in `.gitignore`.
+- Rotate test credentials after each major test campaign.
+
+### TLS / HTTPS
+
+- All tests against QA, Staging, and Production **must** use `PROTOCOL=https`.
+- Do not disable SSL certificate validation in JMeter unless testing against
+  a locally hosted self-signed cert. Never disable it for QA or above.
+- If a self-signed cert is needed on local only:
+  ```bash
+  # In JMeter GUI: Options → SSL Manager → import cert
+  # Or set in jmeter.properties:
+  # httpclient.parameters.file=httpclient.parameters
+  # Add: https.use.cached.ssl.context=false
+  ```
+
+### Test Scope & Rate Limiting
+
+- **Never run** stress or heavy load profiles against Production without
+  written approval from the engineering lead.
+- Use `THREAD_COUNT ≤ 15` for QA. Production load must be pre-approved and
+  run during off-peak hours only.
+- Honour any rate-limit headers (`Retry-After`, `X-RateLimit-*`) returned
+  by the API — add wait logic if the API returns 429.
+
+### Data Handling
+
+- POST bodies (`Add to Cart`, `Place Order`) use synthetic test data only.
+  Never use real customer names, addresses, or payment details.
+- All test-generated orders should be tagged or placed in a known test account
+  so they can be identified and cleaned up after a run.
+- `results/` is git-ignored — never commit `.jtl` files or HTML reports
+  as they may contain response bodies with PII.
+
+### Headers & Identity
+
+- The `User-Agent` header is set to `JMeterPerfTest/3.0` so test traffic is
+  identifiable in server logs and WAF dashboards.
+- The `X-Requested-With: JMeterPerformanceTest` header is included globally
+  so ops can filter performance traffic from real user traffic in dashboards.
+- If the target has a WAF or bot-protection layer, whitelist the test machine
+  IP and the custom User-Agent before running.
+
+### Secrets Scanning
+
+Before committing any changes run:
+
+```bash
+# Scan for accidental credential exposure
+grep -rE "(password|token|secret|apikey|api_key)\s*=" \
+  jmeter/test-plans/ jmeter/config/ jmeter/scripts/
+```
+
+---
+
+## Results and Reports
 
 Each test run produces a batch folder under `results/`:
 
 ```
 results/
-└── 20260427_193600_qa_10u_run_01/
+└── 20260429_120000_qa_10u_run_01/
     ├── results.jtl          ← raw JMeter CSV (all samples)
     ├── jmeter.log           ← JMeter engine log
     ├── stdout.log           ← process stdout
-    ├── summary.html         ← AEP custom dark-themed HTML report
+    ├── summary.html         ← AEP custom HTML report
     └── html-report/
         └── index.html       ← JMeter built-in dashboard
 ```
@@ -286,18 +372,19 @@ Open the custom report (recommended):
 open results/<batch_id>/summary.html
 ```
 
-The **AEP custom report** includes:
-- Executive KPI banner (verdict, avg, P90, error rate, throughput)
-- Colour-coded transaction table (P90 and error rate highlighted red on violation)
-- Run comparison trend chart (multi-iteration runs)
-- Full dark-themed responsive layout
+The AEP custom report includes:
+
+- Executive KPI banner: verdict, avg response, P90, error rate, throughput
+- Colour-coded transaction table (P90 and error rate highlighted red on SLA breach)
+- Journey phase grouping (Browse / Discovery / Cart / Post-Order)
+- Run comparison trend chart for multi-iteration runs
 
 ---
 
 ## Analyzing Results
 
 ```bash
-# Analyze a single run
+# Single run
 python3 scripts/analyze_results.py results/<run>/results.jtl
 
 # With custom thresholds
@@ -311,18 +398,19 @@ python3 scripts/analyze_results.py --aggregate \
   results/run_03/results.jtl \
   --sla 3000 --env qa --users 10 \
   --html results/aggregate/summary.html
-
-# All options
-#   --sla MS          P90 SLA in milliseconds (default: 3000)
-#   --error-rate PCT  Max error rate % (default: 1.0)
-#   --env NAME        Label shown in report
-#   --run LABEL       Run label shown in report
-#   --users N         User count shown in report
-#   --html PATH       Write HTML report to this path
-#   --aggregate       Treat each JTL as a separate run
 ```
 
-Exit codes: `0` = all pass, `1` = violation detected, `2` = input error.
+| Flag | Description |
+|------|-------------|
+| `--sla MS` | P90 SLA in milliseconds (default 3000) |
+| `--error-rate PCT` | Max acceptable error rate % (default 1.0) |
+| `--env NAME` | Label shown in report |
+| `--run LABEL` | Run label shown in report |
+| `--users N` | User count shown in report |
+| `--html PATH` | Write HTML report to this path |
+| `--aggregate` | Treat each JTL as a separate run for comparison |
+
+Exit codes: `0` = all pass, `1` = SLA or error-rate violation, `2` = input error.
 
 ---
 
@@ -331,19 +419,17 @@ Exit codes: `0` = all pass, `1` = violation detected, `2` = input error.
 `config/test_data.csv` provides parameterised user and product data.
 JMeter reads this file round-robin — each virtual user picks the next row.
 
-Columns: `username`, `password`, `product_id`, `quantity`, `category`,
-`search_keyword`, `coupon_code`
+Columns: `username`, `password`, `product_sku`, `quantity`, `category`,
+`search_keyword`, `order_id`
 
-To wire it into the test plan, add a **CSV Data Set Config** element:
+To wire it into the test plan, add a **CSV Data Set Config** element in JMeter GUI:
 
 | Field | Value |
 |-------|-------|
 | Filename | `${__P(DATA_DIR,../../config)}/test_data.csv` |
-| Variable Names | `username,password,product_id,...` |
+| Variable Names | `username,password,product_sku,quantity,category,search_keyword,order_id` |
 | Sharing mode | `All threads` |
 | Recycle on EOF | `True` |
-
-Add more rows to scale the dataset beyond the default 10 entries.
 
 ---
 
@@ -389,10 +475,9 @@ jobs:
           ./run_test.sh \
             -e "${{ github.event.inputs.environment }}" \
             -u "${{ github.event.inputs.users }}" \
-            -d "${{ github.event.inputs.duration }}" \
-            -i 3
+            -d "${{ github.event.inputs.duration }}"
 
-      - name: Analyze & gate
+      - name: Analyze and gate
         run: |
           LATEST=$(ls -td jmeter/results/*run_01 | head -1)
           python3 jmeter/scripts/analyze_results.py \
@@ -412,7 +497,7 @@ jobs:
 ```yaml
 - script: |
     cd jmeter/scripts
-    ./run_test.sh -e qa -u 10 -d 300 -i 3
+    ./run_test.sh -e qa -u 10 -d 300
     LATEST=$(ls -td ../results/*run_01 | head -1)
     python3 analyze_results.py "$LATEST/results.jtl" --sla 3000
   displayName: 'Run JMeter Performance Tests'
@@ -430,30 +515,44 @@ jobs:
 
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
-| `jmeter: command not found` | JMeter not on PATH | `brew install jmeter` or set `JMETER_HOME` |
+| `jmeter: command not found` | JMeter not on PATH | `brew install jmeter` or export `JMETER_HOME` |
 | `Test plan not found` | Wrong `-p` value | Check `test-plans/` for exact filename |
 | `Environment file not found` | Wrong `-e` value | Use `qa`, `staging`, or `prod` |
 | All requests fail immediately | Wrong host/port | Run smoke test; verify env file |
-| P90 > SLA but low error rate | Slow server, not broken | Tune `SLA_RESPONSE_TIME` or investigate server |
-| HTML report dir already exists | Previous run left data | Delete `results/<run>/html-report/` before re-run |
-| High error rate on one endpoint | Bug or rate-limiting | Check `html-report` for assertion failure detail |
+| TC_13 / TC_17 return 401 | Missing auth token | Ensure session/cookie is set before cart steps |
+| TC_11 JSON assertion fails | SKU not found | Verify `PRODUCT_SKU` exists in the QA catalogue |
+| P90 > SLA but low error rate | Slow server | Tune `SLA_RESPONSE_TIME` or investigate server-side |
+| HTML report dir already exists | Previous run left data | Delete `results/<run>/html-report/` and re-run |
+| High error rate on one endpoint | Bug or rate-limiting | Check `html-report` for assertion failure details |
+| 429 Too Many Requests | Rate-limit hit | Increase `THINK_TIME_MEAN` or reduce `THREAD_COUNT` |
 
-### Useful JMeter flags for debugging
+### Useful JMeter flags
 
 ```bash
 # Increase JVM heap for large tests
 export HEAP="-Xms1g -Xmx4g"
 
-# Enable debug logging
-jmeter -n -t test-plans/... -Lorg.apache.jmeter=DEBUG ...
+# Debug logging
+jmeter -n -t test-plans/AEP_ECommerce_Performance_TestPlan.jmx \
+  -Lorg.apache.jmeter=DEBUG -l results.jtl
 
-# Disable SSL certificate validation (for self-signed certs)
-# Add to test plan: HTTP Request Defaults → Advanced → SSL
+# Override multiple parameters inline
+jmeter -n \
+  -t test-plans/AEP_ECommerce_Performance_TestPlan.jmx \
+  -JHOST=qa-aep.aziro.net \
+  -JTHREAD_COUNT=5 \
+  -JDURATION=60 \
+  -JPRODUCT_SKU=B000G250SO \
+  -JORDER_ID=10168 \
+  -l results/quick/results.jtl \
+  -e -o results/quick/html-report
 ```
 
 ---
 
 ## Git Ignore
 
-`results/` is git-ignored — never commit raw JTL output or HTML reports.
-Commit: test plans, scripts, env config files, `test_data.csv`, and this README.
+`results/` is git-ignored — never commit raw JTL output, HTML reports, or
+`test_data.csv` if it contains real credentials.
+
+Commit: test plans, scripts, env config files (without secrets), and this README.
