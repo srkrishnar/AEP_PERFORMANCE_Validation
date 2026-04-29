@@ -128,6 +128,8 @@ PORT="${PORT_OVERRIDE:-${PERF_PORT}}"
 RAMP="${RAMP_OVERRIDE:-${PERF_RAMP_UP}}"
 DURATION="${DURATION_OVERRIDE:-${PERF_DURATION}}"
 SLA="${PERF_SLA_RESPONSE_TIME}"
+# SESSION_COOKIE: env file value → shell env var fallback → empty (UI-only runs still work)
+SESSION_COOKIE="${PERF_SESSION_COOKIE:-${SESSION_COOKIE:-}}"
 
 PLAN_PATH="$PLANS_DIR/$PLAN"
 if [[ ! -f "$PLAN_PATH" ]]; then
@@ -162,6 +164,7 @@ log_info "  Ramp-up      : ${RAMP}s"
 log_info "  Duration     : ${DURATION}s"
 log_info "  Iterations   : $ITERATIONS  $([ "$PARALLEL" = true ] && echo "(PARALLEL)" || echo "(sequential)")"
 log_info "  SLA          : ${SLA}ms"
+log_info "  Session Cookie: $([ -n "$SESSION_COOKIE" ] && echo "SET (${#SESSION_COOKIE} chars)" || echo "NOT SET — API steps will fail")"
 log_info "  Batch ID     : $BATCH_ID"
 log_banner "════════════════════════════════════════════════════════════"
 echo ""
@@ -194,6 +197,7 @@ run_single() {
     -JSLA_RESPONSE_TIME="$SLA" \
     -JTHINK_TIME_MEAN="${PERF_THINK_TIME_MEAN}" \
     -JTHINK_TIME_DEV="${PERF_THINK_TIME_DEV}" \
+    -JSESSION_COOKIE="${SESSION_COOKIE}" \
     -j "$run_dir/jmeter.log" \
     > "$run_dir/stdout.log" 2>&1
 
