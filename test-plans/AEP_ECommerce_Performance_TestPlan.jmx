@@ -2,7 +2,7 @@
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="ECommerce_Performance_TestPlan">
-      <stringProp name="TestPlan.comments">Enterprise e-commerce performance test. 15 endpoints, 50 VUs, 5-min duration. Override via CLI: -JHOST=x -JPORT=y -JTHREAD_COUNT=z</stringProp>
+      <stringProp name="TestPlan.comments">AEP ECommerce end-to-end performance test. Full user journey: Browse → PDP → Cart → Checkout → Order. Override via CLI: -JHOST=x -JPORT=y -JTHREAD_COUNT=z</stringProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
         <collectionProp name="Arguments.arguments"/>
@@ -11,89 +11,105 @@
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
     </TestPlan>
     <hashTree>
+
+      <!-- ===== GLOBAL CONFIGURATION ===== -->
       <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="UDV_Global_Config">
         <collectionProp name="Arguments.arguments">
           <elementProp name="PROTOCOL" elementType="Argument">
             <stringProp name="Argument.name">PROTOCOL</stringProp>
-            <stringProp name="Argument.value">${__P(PROTOCOL,http)}</stringProp>
+            <stringProp name="Argument.value">${__P(PROTOCOL,https)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Communication protocol used (http or https)</stringProp>
+            <stringProp name="Argument.desc">Communication protocol (http or https)</stringProp>
           </elementProp>
           <elementProp name="HOST" elementType="Argument">
             <stringProp name="Argument.name">HOST</stringProp>
-            <stringProp name="Argument.value">${__P(HOST,172.30.62.25)}</stringProp>
+            <stringProp name="Argument.value">${__P(HOST,qa-aep.aziro.net)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">IP address of the server being tested</stringProp>
+            <stringProp name="Argument.desc">Target hostname</stringProp>
           </elementProp>
           <elementProp name="PORT" elementType="Argument">
             <stringProp name="Argument.name">PORT</stringProp>
-            <stringProp name="Argument.value">${__P(PORT,32049)}</stringProp>
+            <stringProp name="Argument.value">${__P(PORT,443)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Port number the server is listening on</stringProp>
+            <stringProp name="Argument.desc">Target port</stringProp>
           </elementProp>
           <elementProp name="THREAD_COUNT" elementType="Argument">
             <stringProp name="Argument.name">THREAD_COUNT</stringProp>
             <stringProp name="Argument.value">${__P(THREAD_COUNT,5)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Number of virtual users hitting the server</stringProp>
+            <stringProp name="Argument.desc">Number of virtual users</stringProp>
           </elementProp>
           <elementProp name="RAMP_UP" elementType="Argument">
             <stringProp name="Argument.name">RAMP_UP</stringProp>
-            <stringProp name="Argument.value">${__P(RAMP_UP,5)}</stringProp>
+            <stringProp name="Argument.value">${__P(RAMP_UP,10)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Time to bring all users online gradually - 5 Sec</stringProp>
+            <stringProp name="Argument.desc">Ramp-up time in seconds</stringProp>
           </elementProp>
           <elementProp name="DURATION" elementType="Argument">
             <stringProp name="Argument.name">DURATION</stringProp>
             <stringProp name="Argument.value">${__P(DURATION,300)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Total time the test runs - 300 sec - 5 min</stringProp>
+            <stringProp name="Argument.desc">Total test duration in seconds</stringProp>
           </elementProp>
           <elementProp name="THINK_TIME_MEAN" elementType="Argument">
             <stringProp name="Argument.name">THINK_TIME_MEAN</stringProp>
             <stringProp name="Argument.value">${__P(THINK_TIME_MEAN,1000)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Average pause between user actions - 1000 ms = 1 sec</stringProp>
+            <stringProp name="Argument.desc">Mean think time between steps (ms)</stringProp>
           </elementProp>
           <elementProp name="THINK_TIME_DEV" elementType="Argument">
             <stringProp name="Argument.name">THINK_TIME_DEV</stringProp>
-            <stringProp name="Argument.value">${__P(THINK_TIME_DEV,3000)}</stringProp>
+            <stringProp name="Argument.value">${__P(THINK_TIME_DEV,500)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">How much the pause can vary - 3000 ms = 3 secs</stringProp>
+            <stringProp name="Argument.desc">Think time standard deviation (ms)</stringProp>
           </elementProp>
           <elementProp name="CONNECT_TIMEOUT" elementType="Argument">
             <stringProp name="Argument.name">CONNECT_TIMEOUT</stringProp>
-            <stringProp name="Argument.value">${__P(CONNECT_TIMEOUT,5000)}</stringProp>
+            <stringProp name="Argument.value">${__P(CONNECT_TIMEOUT,10000)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Max wait time to establish server connection - 5000 ms = 5 secs</stringProp>
+            <stringProp name="Argument.desc">Max connection wait time (ms)</stringProp>
           </elementProp>
           <elementProp name="RESPONSE_TIMEOUT" elementType="Argument">
             <stringProp name="Argument.name">RESPONSE_TIMEOUT</stringProp>
             <stringProp name="Argument.value">${__P(RESPONSE_TIMEOUT,30000)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Max wait time for server to send a response - 30000 ms = 30 secs</stringProp>
+            <stringProp name="Argument.desc">Max response wait time (ms)</stringProp>
           </elementProp>
           <elementProp name="SLA_RESPONSE_TIME" elementType="Argument">
             <stringProp name="Argument.name">SLA_RESPONSE_TIME</stringProp>
             <stringProp name="Argument.value">${__P(SLA_RESPONSE_TIME,3000)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Acceptable response time limit (pass/fail threshold) - 3000 ms = 3 secs</stringProp>
+            <stringProp name="Argument.desc">P90 pass/fail SLA threshold (ms)</stringProp>
           </elementProp>
-          <elementProp name="PRODUCT_ID_1" elementType="Argument">
-            <stringProp name="Argument.name">PRODUCT_ID_1</stringProp>
-            <stringProp name="Argument.value">B00CP92UHU</stringProp>
+          <elementProp name="API_BASE" elementType="Argument">
+            <stringProp name="Argument.name">API_BASE</stringProp>
+            <stringProp name="Argument.value">/integrate/api/v1</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Test product ID 1 used in</stringProp>
+            <stringProp name="Argument.desc">API base path prefix</stringProp>
           </elementProp>
-          <elementProp name="PRODUCT_ID_2" elementType="Argument">
-            <stringProp name="Argument.name">PRODUCT_ID_2</stringProp>
-            <stringProp name="Argument.value">B0775268NR</stringProp>
+          <elementProp name="PRODUCT_SKU" elementType="Argument">
+            <stringProp name="Argument.name">PRODUCT_SKU</stringProp>
+            <stringProp name="Argument.value">${__P(PRODUCT_SKU,B000G250SO)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">Test product ID 2 used in</stringProp>
+            <stringProp name="Argument.desc">Product SKU used throughout the journey</stringProp>
+          </elementProp>
+          <elementProp name="ORDER_ID" elementType="Argument">
+            <stringProp name="Argument.name">ORDER_ID</stringProp>
+            <stringProp name="Argument.value">${__P(ORDER_ID,10168)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+            <stringProp name="Argument.desc">Order ID used for confirmation lookup</stringProp>
+          </elementProp>
+          <elementProp name="SESSION_COOKIE" elementType="Argument">
+            <stringProp name="Argument.name">SESSION_COOKIE</stringProp>
+            <stringProp name="Argument.value">${__P(SESSION_COOKIE,)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+            <stringProp name="Argument.desc">Full Cookie header value from browser DevTools — passed via -JSESSION_COOKIE=... at runtime</stringProp>
           </elementProp>
         </collectionProp>
       </Arguments>
       <hashTree/>
+
+      <!-- ===== HTTP DEFAULTS ===== -->
       <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP_Request_Defaults" enabled="true">
         <stringProp name="HTTPSampler.connect_timeout">${CONNECT_TIMEOUT}</stringProp>
         <stringProp name="HTTPSampler.response_timeout">${RESPONSE_TIMEOUT}</stringProp>
@@ -107,6 +123,8 @@
         <stringProp name="HTTPSampler.implementation"></stringProp>
       </ConfigTestElement>
       <hashTree/>
+
+      <!-- ===== GLOBAL HEADERS ===== -->
       <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_Global_Headers" enabled="true">
         <collectionProp name="HeaderManager.headers">
           <elementProp name="" elementType="Header">
@@ -115,7 +133,7 @@
           </elementProp>
           <elementProp name="" elementType="Header">
             <stringProp name="Header.name">Accept</stringProp>
-            <stringProp name="Header.value">text/html,application/xhtml+xml,application/json,*/*;q=0.8</stringProp>
+            <stringProp name="Header.value">application/json</stringProp>
           </elementProp>
           <elementProp name="" elementType="Header">
             <stringProp name="Header.name">Accept-Language</stringProp>
@@ -123,26 +141,37 @@
           </elementProp>
           <elementProp name="" elementType="Header">
             <stringProp name="Header.name">Accept-Encoding</stringProp>
-            <stringProp name="Header.value">gzip, deflate</stringProp>
+            <stringProp name="Header.value">gzip, deflate, br</stringProp>
           </elementProp>
           <elementProp name="" elementType="Header">
             <stringProp name="Header.name">User-Agent</stringProp>
-            <stringProp name="Header.value">Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 JMeterPerfTest/2.0</stringProp>
+            <stringProp name="Header.value">Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 JMeterPerfTest/3.0</stringProp>
           </elementProp>
           <elementProp name="" elementType="Header">
             <stringProp name="Header.name">Cache-Control</stringProp>
             <stringProp name="Header.value">no-cache</stringProp>
           </elementProp>
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">X-Requested-With</stringProp>
+            <stringProp name="Header.value">JMeterPerformanceTest</stringProp>
+          </elementProp>
         </collectionProp>
       </HeaderManager>
       <hashTree/>
+
+      <!-- ===== COOKIE MANAGER ===== -->
       <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="HTTP_Cookie_Manager" enabled="true">
         <collectionProp name="CookieManager.cookies"/>
         <boolProp name="CookieManager.clearEachIteration">true</boolProp>
         <boolProp name="CookieManager.controlledByThreadGroup">false</boolProp>
       </CookieManager>
       <hashTree/>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="TG_01_Full_Endpoint_Validation">
+
+      <!-- ===================================================================
+           THREAD GROUP — Full E-Commerce Journey
+           Order: Browse → Category → SKU → Similar → Cart → Checkout → Order
+           =================================================================== -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="TG_01_ECommerce_Full_Journey">
         <stringProp name="ThreadGroup.num_threads">${THREAD_COUNT}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${RAMP_UP}</stringProp>
         <stringProp name="ThreadGroup.duration">${DURATION}</stringProp>
@@ -156,49 +185,18 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_01_HomePage" enabled="true">
+
+        <!-- ─────────────────────────────────────────────────────────────────
+             PHASE 1 — BROWSE / MERCHANDISING
+             ───────────────────────────────────────────────────────────────── -->
+
+        <!-- TC_01 — Merchandise Landing -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_01_MerchandisePage" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_01_HomePage" enabled="true">
-            <stringProp name="HTTPSampler.path">/</stringProp>
-            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
-            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-              <collectionProp name="Arguments.arguments"/>
-            </elementProp>
-          </HTTPSamplerProxy>
-          <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_HomePage_200" enabled="true">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="49586">200</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Home Page did not return HTTP 200</stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">8</intProp>
-            </ResponseAssertion>
-            <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_HomePage_3s" enabled="true">
-              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
-            </DurationAssertion>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_01" enabled="true">
-          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
-          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
-        </GaussianRandomTimer>
-        <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_02_MerchandisePage" enabled="true">
-          <boolProp name="TransactionController.parent">true</boolProp>
-          <boolProp name="TransactionController.includeTimers">false</boolProp>
-        </TransactionController>
-        <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_02_MerchandisePage" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_01_MerchandisePage" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -213,29 +211,31 @@
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="49586">200</stringProp>
               </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Merchandise Page did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.custom_message">FAIL: Merchandise page did not return HTTP 200</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
               <boolProp name="Assertion.assume_success">false</boolProp>
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_MerchandisePage_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_MerchandisePage_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_02" enabled="true">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_01" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_03_ShopPage_Default" enabled="true">
+
+        <!-- TC_02 — Shop Default -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_02_ShopPage_Default" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_03_ShopPage_Default" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_02_ShopPage_Default" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise/shop</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -250,66 +250,31 @@
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="49586">200</stringProp>
               </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Shop Page default did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.custom_message">FAIL: Shop default page did not return HTTP 200</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
               <boolProp name="Assertion.assume_success">false</boolProp>
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopDefault_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopDefault_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_03" enabled="true">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_02" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_04_PDP_Product1" enabled="true">
+
+        <!-- TC_03 — Shop Sort Price Asc -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_03_ShopSort_PriceAsc" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_04_PDP_B00CP92UHU" enabled="true">
-            <stringProp name="HTTPSampler.path">/merchandise/product/${PRODUCT_ID_1}</stringProp>
-            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
-            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-              <collectionProp name="Arguments.arguments"/>
-            </elementProp>
-          </HTTPSamplerProxy>
-          <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_PDP_Product1_200" enabled="true">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="49586">200</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: PDP B00CP92UHU did not return HTTP 200</stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">8</intProp>
-            </ResponseAssertion>
-            <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_PDP_Product1_3s" enabled="true">
-              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
-            </DurationAssertion>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_04" enabled="true">
-          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
-          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
-        </GaussianRandomTimer>
-        <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_05_ShopSort_PriceAsc" enabled="true">
-          <boolProp name="TransactionController.parent">true</boolProp>
-          <boolProp name="TransactionController.includeTimers">false</boolProp>
-        </TransactionController>
-        <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_05_ShopSort_PriceAsc" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_03_ShopSort_PriceAsc" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise/shop?sort=price_asc</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -330,23 +295,25 @@
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopSortPriceAsc_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopSortPriceAsc_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_05" enabled="true">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_03" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_06_ShopSort_PriceDesc" enabled="true">
+
+        <!-- TC_04 — Shop Sort Price Desc -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_04_ShopSort_PriceDesc" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_06_ShopSort_PriceDesc" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_04_ShopSort_PriceDesc" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise/shop?sort=price_desc</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -367,23 +334,25 @@
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopSortPriceDesc_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopSortPriceDesc_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_06" enabled="true">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_04" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_07_ShopSort_RatingDesc" enabled="true">
+
+        <!-- TC_05 — Shop Sort Rating Desc -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_05_ShopSort_RatingDesc" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_07_ShopSort_RatingDesc" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_05_ShopSort_RatingDesc" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise/shop?sort=rating_desc</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -404,23 +373,25 @@
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopSortRatingDesc_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopSortRatingDesc_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_07" enabled="true">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_05" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_08_ShopSearch_Mobile" enabled="true">
+
+        <!-- TC_06 — Search Mobile -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_06_ShopSearch_Mobile" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_08_ShopSearch_Mobile" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_06_ShopSearch_Mobile" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise/shop?q=mobile</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -441,97 +412,25 @@
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopSearchMobile_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopSearchMobile_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_08" enabled="true">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_06" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_09_ShopSearch_Mobile_Rating4" enabled="true">
+
+        <!-- TC_07 — Category Smartphones -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_07_Category_Smartphones" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_09_ShopSearch_Mobile_Rating4" enabled="true">
-            <stringProp name="HTTPSampler.path">/merchandise/shop?ratings=%5B&quot;rating-4&quot;%5D</stringProp>
-            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
-            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-              <collectionProp name="Arguments.arguments"/>
-            </elementProp>
-          </HTTPSamplerProxy>
-          <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_ShopMobileRating4_200" enabled="true">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="49586">200</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Shop mobile+rating-4 did not return HTTP 200</stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">8</intProp>
-            </ResponseAssertion>
-            <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopMobileRating4_3s" enabled="true">
-              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
-            </DurationAssertion>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_09" enabled="true">
-          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
-          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
-        </GaussianRandomTimer>
-        <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_10_ShopSearch_Mobile_Rating4_ColorAgate" enabled="true">
-          <boolProp name="TransactionController.parent">true</boolProp>
-          <boolProp name="TransactionController.includeTimers">false</boolProp>
-        </TransactionController>
-        <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_10_ShopSearch_Mobile_Rating4_ColorAgate" enabled="true">
-            <stringProp name="HTTPSampler.path">/merchandise/shop?ratings=%5B&quot;rating-4&quot;%5D&amp;memoryStorageCapacity=%5B&quot;4+GB&quot;%5D&amp;Color=%5B&quot;%233E8E41&quot;%5D</stringProp>
-            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
-            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-              <collectionProp name="Arguments.arguments"/>
-            </elementProp>
-          </HTTPSamplerProxy>
-          <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_ShopMobileRating4Agate_200" enabled="true">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="49586">200</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Shop mobile+rating-4+Agate did not return HTTP 200</stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">8</intProp>
-            </ResponseAssertion>
-            <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ShopMobileRating4Agate_3s" enabled="true">
-              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
-            </DurationAssertion>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_10" enabled="true">
-          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
-          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
-        </GaussianRandomTimer>
-        <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_11_Category_Smartphones" enabled="true">
-          <boolProp name="TransactionController.parent">true</boolProp>
-          <boolProp name="TransactionController.includeTimers">false</boolProp>
-        </TransactionController>
-        <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_11_Category_Smartphones" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_07_Category_Smartphones" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise/mobile-and-accessories-smartphones-brands</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -552,23 +451,25 @@
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_CategorySmartphones_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_CategorySmartphones_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_11" enabled="true">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_07" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_12_Category_SmartphonesApple" enabled="true">
+
+        <!-- TC_08 — Category SmartphonesApple -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_08_Category_SmartphonesApple" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_12_Category_SmartphonesApple" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_08_Category_SmartphonesApple" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise/mobile-and-accessories-smartphones-brands-apple</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -583,29 +484,31 @@
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="49586">200</stringProp>
               </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Apple smartphones did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.custom_message">FAIL: Apple smartphones category did not return HTTP 200</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
               <boolProp name="Assertion.assume_success">false</boolProp>
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_CategoryApple_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_CategoryApple_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_12" enabled="true">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_08" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_13_Category_Apparel" enabled="true">
+
+        <!-- TC_09 — Category Apparel -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_09_Category_Apparel" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_13_Category_Apparel" enabled="true">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_09_Category_Apparel" enabled="true">
             <stringProp name="HTTPSampler.path">/merchandise/apparel</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -626,7 +529,293 @@
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_CategoryApparel_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_CategoryApparel_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_09" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- ─────────────────────────────────────────────────────────────────
+             PHASE 2 — API: CATEGORY TREE & PRODUCT DISCOVERY
+             Session cookie is injected via HM_API_Session_Cookie below.
+             Pass at runtime: -JSESSION_COOKIE="i18next=...; session_token=..."
+             ───────────────────────────────────────────────────────────────── -->
+
+        <!-- TC_00 — Session Validation (confirms cookie is accepted before API phase) -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_00_Session_Validation" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_00_SessionCheck_Profile" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/profile</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Session_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_SessionCheck_200" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Session cookie rejected — profile returned non-200. Refresh SESSION_COOKIE and re-run.</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">8</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_SessionCheck_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_00" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- TC_10 — API Category Tree -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_10_API_Browse_ProductCategories" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_10_Browse_ProductCategories" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/categories/categoryTree</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_CategoryTree_200" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Category tree API did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">8</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_CategoryTree_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+            <!-- Verify response body contains category data -->
+            <JSONPathAssertion guiclass="JSONPathAssertionGui" testclass="JSONPathAssertion" testname="JA_CategoryTree_HasData" enabled="true">
+              <stringProp name="JSON_PATH">$</stringProp>
+              <stringProp name="EXPECTED_VALUE"></stringProp>
+              <boolProp name="JSONVALIDATION">false</boolProp>
+              <boolProp name="EXPECT_NULL">false</boolProp>
+              <boolProp name="INVERT">false</boolProp>
+              <boolProp name="ISREGEX">false</boolProp>
+              <stringProp name="JSONASSERTION_VALUE"></stringProp>
+            </JSONPathAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_10" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- TC_11 — API Product SKU Lookup -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_11_API_Product_SKU" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_11_Product_SKU" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/products/sku/${PRODUCT_SKU}</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_ProductSKU_200" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Product SKU lookup did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">8</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ProductSKU_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+            <!-- Verify product SKU is present in response — API wraps result in $.data -->
+            <JSONPathAssertion guiclass="JSONPathAssertionGui" testclass="JSONPathAssertion" testname="JA_ProductSKU_HasSku" enabled="true">
+              <stringProp name="JSON_PATH">$.data.sku</stringProp>
+              <stringProp name="EXPECTED_VALUE">${PRODUCT_SKU}</stringProp>
+              <boolProp name="JSONVALIDATION">true</boolProp>
+              <boolProp name="EXPECT_NULL">false</boolProp>
+              <boolProp name="INVERT">false</boolProp>
+              <boolProp name="ISREGEX">false</boolProp>
+            </JSONPathAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_11" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- TC_12 — API Similar Products -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_12_API_SimilarProducts" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_12_SimilarProducts" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/products/similarProducts</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="sku" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.name">sku</stringProp>
+                  <stringProp name="Argument.value">${PRODUCT_SKU}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_SimilarProducts_200_404" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+                <stringProp name="49587">404</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Similar products API returned unexpected status (not 200 or 404)</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">true</boolProp>
+              <intProp name="Assertion.test_type">40</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_SimilarProducts_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_12" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- ─────────────────────────────────────────────────────────────────
+             PHASE 3 — API: CART & CHECKOUT JOURNEY
+             ───────────────────────────────────────────────────────────────── -->
+
+        <!-- TC_13 — API Add to Cart (POST) -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_13_API_AddToCart" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_POST_13_AddToCart" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/carts/items</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">{"items":[{"sku":"${PRODUCT_SKU}","quantity":1}]}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_AddToCart_200_201" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+                <stringProp name="49587">201</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Add to cart did not return HTTP 200 or 201</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">40</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_AddToCart_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
@@ -637,13 +826,15 @@
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_14_PDP_Product2" enabled="true">
+
+        <!-- TC_14 — API Get Cart -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_14_API_Review_CartItems" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_14_PDP_B0775268NR" enabled="true">
-            <stringProp name="HTTPSampler.path">/merchandise/product/${PRODUCT_ID_2}</stringProp>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_14_Review_CartItems" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/carts</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
@@ -653,17 +844,26 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_PDP_Product2_200" enabled="true">
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_GetCart_200" enabled="true">
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="49586">200</stringProp>
               </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: PDP B0775268NR did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.custom_message">FAIL: Get cart API did not return HTTP 200</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
               <boolProp name="Assertion.assume_success">false</boolProp>
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_PDP_Product2_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_GetCart_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
@@ -674,13 +874,92 @@
           <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_15_Category_Apparel_Revisit">
+
+        <!-- TC_15 — API Checkout Process with Delivery Address -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_15_API_Initiate_Checkout" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_15_Category_Apparel_Revisit" enabled="true">
-            <stringProp name="HTTPSampler.path">/merchandise/apparel</stringProp>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_15_Initiate_Checkout" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/checkout/process</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="includeDeliveryAddress" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.name">includeDeliveryAddress</stringProp>
+                  <stringProp name="Argument.value">true</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_CheckoutProcess_200" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Checkout process API did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">8</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_CheckoutProcess_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+            <!-- Extract checkout fields into JMeter vars for TC_17 Place Order payload -->
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="EX_Checkout_ExtractFields" enabled="true">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="script">
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+def body = prev.getResponseDataAsString()
+if (!body || body.trim().isEmpty()) { return }
+try {
+  def json = new JsonSlurper().parseText(body)
+  vars.put('CHECKOUT_ORDER_SUMMARY',   JsonOutput.toJson(json?.orderSummary   ?: [:]))
+  vars.put('CHECKOUT_REVIEW_ORDER',    JsonOutput.toJson(json?.reviewOrder    ?: [:]))
+  vars.put('CHECKOUT_DELIVERY_ADDRESS',JsonOutput.toJson(json?.deliveryAddress ?: [:]))
+} catch (Exception e) {
+  vars.put('CHECKOUT_ORDER_SUMMARY',   '{}')
+  vars.put('CHECKOUT_REVIEW_ORDER',    '{}')
+  vars.put('CHECKOUT_DELIVERY_ADDRESS','{}')
+  log.warn('EX_Checkout_ExtractFields: ' + e.message)
+}
+              </stringProp>
+            </JSR223PostProcessor>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_15" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- TC_16 — API Delivery Addresses -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_16_API_Select_DeliveryAddress" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_16_Select_DeliveryAddress" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/delivery/addresses</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
@@ -690,29 +969,104 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_ApparelRevisit_200" enabled="true">
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_DeliveryAddresses_200" enabled="true">
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="49586">200</stringProp>
               </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Apparel revisit did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.custom_message">FAIL: Delivery addresses API did not return HTTP 200</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
               <boolProp name="Assertion.assume_success">false</boolProp>
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ApparelRevisit_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_DeliveryAddresses_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_16_Add to Cart">
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_16" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- TC_17 — API Place Order (POST) -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_17_API_Submit_Order" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_16_Add to Cart">
-            <stringProp name="HTTPSampler.path">/merchandise/apparel</stringProp>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_POST_17_Submit_Order" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/orders/place</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">{"orderSummary":${CHECKOUT_ORDER_SUMMARY},"reviewOrder":${CHECKOUT_REVIEW_ORDER},"deliveryAddress":${CHECKOUT_DELIVERY_ADDRESS}}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_PlaceOrder_200_201" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+                <stringProp name="49587">201</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Place order API did not return HTTP 200 or 201</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">40</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_PlaceOrder_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_17" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- ─────────────────────────────────────────────────────────────────
+             PHASE 4 — API: PROFILE & ORDER CONFIRMATION
+             ───────────────────────────────────────────────────────────────── -->
+
+        <!-- TC_18 — API User Profile -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_18_API_View_UserProfile" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_18_View_UserProfile" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/profile</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
@@ -722,24 +1076,94 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_ApparelRevisit_200" enabled="true">
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_Profile_200" enabled="true">
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="49586">200</stringProp>
               </collectionProp>
-              <stringProp name="Assertion.custom_message">FAIL: Apparel revisit did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.custom_message">FAIL: Profile API did not return HTTP 200</stringProp>
               <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
               <boolProp name="Assertion.assume_success">false</boolProp>
               <intProp name="Assertion.test_type">8</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_ApparelRevisit_3s" enabled="true">
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_Profile_SLA" enabled="true">
               <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
             </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
+        <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_18" enabled="true">
+          <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
+          <stringProp name="RandomTimer.range">${THINK_TIME_DEV}</stringProp>
+        </GaussianRandomTimer>
+        <hashTree/>
+
+        <!-- TC_19 — API Order Confirmation -->
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_19_API_OrderConfirmation" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_GET_19_OrderConfirmation" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/orders/confirmation/${ORDER_ID}</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_OrderConfirmation_200" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Order confirmation API did not return HTTP 200</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">8</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_OrderConfirmation_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+            <!-- Verify order ID is returned in confirmation -->
+            <JSONPathAssertion guiclass="JSONPathAssertionGui" testclass="JSONPathAssertion" testname="JA_OrderConfirmation_HasOrderId" enabled="true">
+              <stringProp name="JSON_PATH">$.orderId</stringProp>
+              <stringProp name="EXPECTED_VALUE"></stringProp>
+              <boolProp name="JSONVALIDATION">false</boolProp>
+              <boolProp name="EXPECT_NULL">false</boolProp>
+              <boolProp name="INVERT">false</boolProp>
+              <boolProp name="ISREGEX">false</boolProp>
+            </JSONPathAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
       </hashTree>
-      <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="LIS_Summary_Report">
+
+      <!-- ===== LISTENERS ===== -->
+      <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="LIS_Summary_Report" enabled="true">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>
@@ -777,6 +1201,7 @@
         <boolProp name="useGroupName">true</boolProp>
       </ResultCollector>
       <hashTree/>
+
       <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="LIS_Aggregate_Report" enabled="false">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
@@ -814,6 +1239,7 @@
         <stringProp name="filename"></stringProp>
       </ResultCollector>
       <hashTree/>
+
       <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="LIS_View_Results_Tree" enabled="false">
         <boolProp name="ResultCollector.error_logging">true</boolProp>
         <objProp>
@@ -851,6 +1277,7 @@
         <stringProp name="filename"></stringProp>
       </ResultCollector>
       <hashTree/>
+
     </hashTree>
   </hashTree>
 </jmeterTestPlan>
