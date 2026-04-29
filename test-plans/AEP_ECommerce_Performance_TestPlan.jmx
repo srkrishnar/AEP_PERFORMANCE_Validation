@@ -979,76 +979,99 @@ try {
         </GaussianRandomTimer>
         <hashTree/>
 
-        <!-- TC_17 — API Place Order (POST via JSR223 to avoid variable substitution issues with JSON body) -->
+        <!-- TC_17 — API Place Order (HTTPSamplerProxy + JSR223PreProcessor to safely build body) -->
         <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC_17_API_Submit_Order" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="HTTP_POST_17_Submit_Order" enabled="true">
-            <stringProp name="scriptLanguage">groovy</stringProp>
-            <stringProp name="script">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP_POST_17_Submit_Order" enabled="true">
+            <stringProp name="HTTPSampler.path">${API_BASE}/orders/place</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">${ORDER_BODY}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <!-- Build ORDER_BODY before the sampler fires — avoids JMeter mangling JSON in raw body -->
+            <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="PRE_BuildOrderBody" enabled="true">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="script">
 import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 
-def protocol  = vars.get('PROTOCOL') ?: 'https'
-def host      = vars.get('HOST')     ?: props.get('HOST') ?: 'qa-aep.aziro.net'
-def port      = vars.get('PORT')     ?: '443'
-def apiBase   = vars.get('API_BASE') ?: '/integrate/api/v1'
-def cookie    = vars.get('SESSION_COOKIE') ?: ''
-
-def orderSummaryStr   = vars.get('CHECKOUT_ORDER_SUMMARY')   ?: '{}'
-def reviewOrderStr    = vars.get('CHECKOUT_REVIEW_ORDER')    ?: '{}'
+def orderSummaryStr   = vars.get('CHECKOUT_ORDER_SUMMARY')    ?: '{}'
+def reviewOrderStr    = vars.get('CHECKOUT_REVIEW_ORDER')     ?: '{}'
 def deliveryAddrStr   = vars.get('CHECKOUT_DELIVERY_ADDRESS') ?: '{}'
 
-def slurper = new JsonSlurper()
-def bodyMap = [
-  orderSummary:    slurper.parseText(orderSummaryStr),
-  reviewOrder:     slurper.parseText(reviewOrderStr),
-  deliveryAddress: slurper.parseText(deliveryAddrStr)
-]
-def bodyJson = JsonOutput.toJson(bodyMap)
+log.info("TC_17 PRE: orderSummary=${orderSummaryStr.take(80)} reviewOrder=${reviewOrderStr.take(80)} deliveryAddress=${deliveryAddrStr.take(80)}")
 
-def url = new URL("${protocol}://${host}:${port}${apiBase}/orders/place")
-def conn = url.openConnection()
-conn.setRequestMethod('POST')
-conn.setDoOutput(true)
-conn.setRequestProperty('Content-Type', 'application/json')
-conn.setRequestProperty('Cookie', cookie)
-conn.setConnectTimeout(10000)
-conn.setReadTimeout(30000)
-
-long start = System.currentTimeMillis()
-conn.outputStream.withWriter('UTF-8') { it.write(bodyJson) }
-def responseCode = conn.responseCode
-long elapsed = System.currentTimeMillis() - start
-
-def responseBody = ''
 try {
-  responseBody = responseCode >= 400 ? conn.errorStream?.text : conn.inputStream?.text
-} catch (Exception ignored) {}
-
-SampleResult.setResponseCode(String.valueOf(responseCode))
-SampleResult.setResponseMessage(conn.responseMessage ?: '')
-SampleResult.setResponseData(responseBody ?: '', 'UTF-8')
-SampleResult.setContentType('application/json')
-SampleResult.setLatency(elapsed)
-SampleResult.setSentBytes(bodyJson.bytes.length)
-
-vars.put('PLACE_ORDER_RESPONSE_CODE', String.valueOf(responseCode))
-vars.put('PLACE_ORDER_RESPONSE_BODY', responseBody ?: '')
-
-log.info("TC_17 PlaceOrder → HTTP ${responseCode} | body sent: ${bodyJson.length()} chars | response: ${responseBody?.take(200)}")
-
-if (responseCode == 200 || responseCode == 201) {
-  SampleResult.setSuccessful(true)
-} else {
-  SampleResult.setSuccessful(false)
-  SampleResult.setResponseMessage("FAIL: Place order returned HTTP ${responseCode}. Body: ${responseBody?.take(500)}")
+  def slurper = new JsonSlurper()
+  def body = [
+    orderSummary:    slurper.parseText(orderSummaryStr),
+    reviewOrder:     slurper.parseText(reviewOrderStr),
+    deliveryAddress: slurper.parseText(deliveryAddrStr)
+  ]
+  def bodyJson = JsonOutput.toJson(body)
+  vars.put('ORDER_BODY', bodyJson)
+  log.info("TC_17 PRE: ORDER_BODY built OK — ${bodyJson.length()} chars")
+} catch (Exception e) {
+  vars.put('ORDER_BODY', '{}')
+  log.warn("TC_17 PRE: failed to build ORDER_BODY — ${e.message}")
 }
-            </stringProp>
-          </JSR223Sampler>
-          <hashTree/>
+              </stringProp>
+            </JSR223PreProcessor>
+            <hashTree/>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HM_API_Cookie_And_ContentType" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Cookie</stringProp>
+                  <stringProp name="Header.value">${SESSION_COOKIE}</stringProp>
+                </elementProp>
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Content-Type</stringProp>
+                  <stringProp name="Header.value">application/json</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="RA_PlaceOrder_200_201" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+                <stringProp name="49587">201</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">FAIL: Place order API did not return HTTP 200 or 201</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">true</boolProp>
+              <intProp name="Assertion.test_type">40</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="DA_PlaceOrder_SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${SLA_RESPONSE_TIME}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="POST_LogPlaceOrderResult" enabled="true">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="script">
+def code = prev.getResponseCode()
+def body = prev.getResponseDataAsString()
+log.info("TC_17 POST: HTTP ${code} | response: ${body?.take(300)}")
+vars.put('PLACE_ORDER_RESPONSE_CODE', code ?: '')
+vars.put('PLACE_ORDER_RESPONSE_BODY', body ?: '')
+              </stringProp>
+            </JSR223PostProcessor>
+            <hashTree/>
+          </hashTree>
         </hashTree>
         <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_17" enabled="true">
           <stringProp name="ConstantTimer.delay">${THINK_TIME_MEAN}</stringProp>
