@@ -93,6 +93,12 @@
             <stringProp name="Argument.metadata">=</stringProp>
             <stringProp name="Argument.desc">Product SKU used throughout the journey</stringProp>
           </elementProp>
+          <elementProp name="CART_SKU" elementType="Argument">
+            <stringProp name="Argument.name">CART_SKU</stringProp>
+            <stringProp name="Argument.value">${__P(PRODUCT_SKU,B000G250SO)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+            <stringProp name="Argument.desc">SKU confirmed from TC_11 product lookup — overwritten by EX_Product_ExtractSku</stringProp>
+          </elementProp>
           <elementProp name="ORDER_ID" elementType="Argument">
             <stringProp name="Argument.name">ORDER_ID</stringProp>
             <stringProp name="Argument.value">${__P(ORDER_ID,10168)}</stringProp>
@@ -704,6 +710,23 @@
               <boolProp name="ISREGEX">false</boolProp>
             </JSONPathAssertion>
             <hashTree/>
+            <!-- Extract confirmed SKU from product response to use in AddToCart -->
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="EX_Product_ExtractSku" enabled="true">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="script">
+import groovy.json.JsonSlurper
+def body = prev.getResponseDataAsString()
+if (!body || body.trim().isEmpty()) { return }
+try {
+  def json = new JsonSlurper().parseText(body)
+  def sku = json?.data?.sku ?: vars.get('PRODUCT_SKU')
+  vars.put('CART_SKU', sku)
+} catch (Exception e) {
+  vars.put('CART_SKU', vars.get('PRODUCT_SKU'))
+}
+              </stringProp>
+            </JSR223PostProcessor>
+            <hashTree/>
           </hashTree>
         </hashTree>
         <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="TMR_ThinkTime_11" enabled="true">
@@ -788,7 +811,7 @@
               <collectionProp name="Arguments.arguments">
                 <elementProp name="" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">{"items":[{"sku":"${PRODUCT_SKU}","quantity":1}]}</stringProp>
+                  <stringProp name="Argument.value">{"items":[{"sku":"${CART_SKU}","quantity":1}]}</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
               </collectionProp>
