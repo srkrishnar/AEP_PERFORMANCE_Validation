@@ -18,13 +18,13 @@ export PERF_CONNECT_TIMEOUT="10000"
 export PERF_RESPONSE_TIMEOUT="30000"
 
 # Think-time (milliseconds)
-export PERF_THINK_TIME_MEAN="1000"
-export PERF_THINK_TIME_DEV="500"
+export PERF_THINK_TIME_MEAN="500"
+export PERF_THINK_TIME_DEV="200"
 
 # Default load profile (overridden at runtime by -t / -r / -d flags)
 export PERF_THREAD_COUNT="5"
 export PERF_RAMP_UP="10"
-export PERF_DURATION="300"
+export PERF_DURATION="600"
 
 # Session cookie for authenticated API calls (TC_00 through TC_19)
 # HOW TO GET:
@@ -32,4 +32,4 @@ export PERF_DURATION="300"
 #   2. DevTools (F12) → Network tab → click any API request (e.g. /profile)
 #   3. Request Headers → Cookie → copy the entire value
 #   4. Paste below (one line, no quotes)
-export PERF_SESSION_COOKIE="i18next=en-US; x-user-id=6; x-consent=granted; ui_redirect_url=https://qa-aep.aziro.net; session_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrVTlpZXlVem1aTVhkVTdJTGFzVl9SMnFYWWlCZjRCS2lJWlZ5YWREV3FrIiwiYWVwX3VzZXJfaWQiOjYsInNjb3BlIjoiYWVwOnVzZXI6cmVhZCBhZXA6cHJvZmlsZTp3cml0ZSIsImlzcyI6InFhLWFlcC5hemlyby5uZXQiLCJhdWQiOlsiYWVwLXVzZXItc2VydmljZSJdLCJpYXQiOjE3Nzc0NTgyODgsImV4cCI6MTc3NzQ2MDA4OH0.m4lz2rCZFhFTr4LW500393LyKKihW2QYBFW1gXS83AY; X-Session-ID=cca6bd0e-c143-3e29-892c-e4a2cbf42bc0"
+export PERF_SESSION_COOKIE="i18next=en-US; x-user-id=6; x-consent=granted; ui_redirect_url=https://qa-aep.aziro.net; session_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrVTlpZXlVem1aTVhkVTdJTGFzVl9SMnFYWWlCZjRCS2lJWlZ5YWREV3FrIiwiYWVwX3VzZXJfaWQiOjYsInNjb3BlIjoiYWVwOnVzZXI6cmVhZCBhZXA6cHJvZmlsZTp3cml0ZSIsImlzcyI6InFhLWFlcC5hemlyby5uZXQiLCJhdWQiOlsiYWVwLXVzZXItc2VydmljZSJdLCJpYXQiOjE3Nzc0NjQxOTgsImV4cCI6MTc3NzQ2NTk5OH0.RFLL9D6wm0ptFJlgocVAKvJOaX2UzujkN5LFEJbus6c; X-Session-ID=e86377b4-1795-3168-a4f1-5a0dc69d0449"
