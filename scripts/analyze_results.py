@@ -120,6 +120,31 @@ def build_stats(rows: list[dict], sla_ms: int, max_err: float) -> tuple[list[TxS
     return tx, _stat("OVERALL", rows)
 
 
+def build_sample_logs(rows: list[dict]) -> dict[str, list[dict]]:
+    """Return per-TC list of individual HTTP sampler rows (not TC_ transaction rows)."""
+    by_tc: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        label = r.get("label", "")
+        # HTTP_ rows carry the thread group context in threadName
+        # Map HTTP_ samplers back to their parent TC by prefix number
+        m = re.match(r"HTTP_\w+_(\d+)_", label)
+        if m:
+            tc_key = f"TC_{m.group(1):>02}"
+            ts_ms  = int(r.get("timeStamp", 0))
+            ts_str = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%H:%M:%S") if ts_ms else ""
+            by_tc[tc_key].append({
+                "ts":      ts_str,
+                "elapsed": r.get("elapsed", ""),
+                "code":    r.get("responseCode", ""),
+                "success": r.get("success", "true").lower() == "true",
+                "message": r.get("failureMessage") or r.get("responseMessage", ""),
+                "url":     r.get("URL", r.get("url", "")),
+                "label":   label,
+                "bytes":   r.get("bytes", ""),
+            })
+    return dict(by_tc)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -313,6 +338,7 @@ def write_html(
     users: int,
     run_overalls: list[tuple[str, TxStats]] | None = None,
     log_path: Path | None = None,
+    sample_logs: dict[str, list[dict]] | None = None,
 ) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
 
@@ -336,7 +362,10 @@ def write_html(
     trend_avg    = _jlist([f"{s.avg_ms:.0f}"  for _, s in (run_overalls or [])])
 
     # ── Table rows ───────────────────────────────────────────────────────────
+    slogs = sample_logs or {}
     table_rows = ""
+    modal_data_js = ""   # JS object mapping modal-id → array of sample dicts
+
     for i, s in enumerate(tx):
         pt, pc   = _perf_label(s.p90_ms, sla_ms)
         badge    = f'<span class="badge {"pass" if s.passed else "fail"}">{"✓ Pass" if s.passed else "✗ Fail"}</span>'
@@ -345,6 +374,21 @@ def write_html(
         err_cls  = " red-val" if not s.err_ok else ""
         row_cls  = " fail-row" if not s.passed else ""
         health   = f'<div class="health-bar"><div class="health-fill {"hf-good" if s.sla_ok else "hf-bad"}" style="width:{min(s.p90_ms/sla_ms*100,100):.0f}%"></div></div>'
+        modal_id = f"modal_tc_{i+1:02d}"
+
+        # build JS sample array for this TC
+        tc_key = f"TC_{i+1:02d}" if len(str(i+1)) == 2 else f"TC_0{i+1}"
+        # also try matching by label number prefix
+        label_num = re.match(r"TC_(\d+)", s.label)
+        if label_num:
+            tc_key = f"TC_{int(label_num.group(1)):02d}"
+        samples_for_tc = slogs.get(tc_key, [])
+        import json as _json
+        modal_data_js += f'modalData["{modal_id}"] = {_json.dumps(samples_for_tc)};\n'
+
+        eye_cls = "eye-fail" if s.errors > 0 else "eye-pass"
+        eye_btn = f'<button class="eye-btn {eye_cls}" onclick="openModal(\'{modal_id}\')" title="View sample logs">👁</button>'
+
         table_rows += f"""
         <tr class="{row_cls}">
           <td class="num tc-num">{i+1:02d}</td>
@@ -359,6 +403,7 @@ def write_html(
           <td class="num{err_cls}">{s.error_rate:.2f}%</td>
           <td>{rating}</td>
           <td>{badge}</td>
+          <td style="text-align:center">{eye_btn}</td>
         </tr>"""
 
     # ── Run comparison ───────────────────────────────────────────────────────
@@ -765,6 +810,67 @@ footer{{
   body{{font-size:11px}}
 }}
 
+/* ── Eye button & modal ──────────────────────────────────────────────────── */
+.eye-btn{{
+  background:none;border:none;cursor:pointer;font-size:15px;
+  padding:2px 4px;border-radius:4px;line-height:1;
+  transition:transform .15s,background .15s;
+}}
+.eye-btn:hover{{background:var(--surface2);transform:scale(1.2)}}
+.eye-pass{{opacity:.55}}
+.eye-fail{{opacity:1;filter:drop-shadow(0 0 3px rgba(220,38,38,.5))}}
+.modal-overlay{{
+  display:none;position:fixed;inset:0;z-index:1000;
+  background:rgba(15,23,42,.55);backdrop-filter:blur(3px);
+  align-items:center;justify-content:center;
+}}
+.modal-overlay.open{{display:flex}}
+.modal-box{{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+  width:min(900px,95vw);max-height:80vh;
+  display:flex;flex-direction:column;overflow:hidden;
+}}
+.modal-header{{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  background:var(--surface2);flex-shrink:0;
+}}
+.modal-title{{font-size:13px;font-weight:700;color:var(--text)}}
+.modal-close{{
+  background:none;border:none;font-size:18px;cursor:pointer;
+  color:var(--text-3);padding:2px 6px;border-radius:4px;
+  line-height:1;
+}}
+.modal-close:hover{{background:var(--border);color:var(--text)}}
+.modal-summary{{
+  display:flex;gap:16px;padding:10px 20px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  font-size:12px;flex-wrap:wrap;
+}}
+.modal-stat{{color:var(--text-2)}}
+.modal-stat strong{{color:var(--text)}}
+.modal-stat.s-fail strong{{color:var(--red)}}
+.modal-stat.s-pass strong{{color:var(--green)}}
+.modal-body{{overflow-y:auto;flex:1}}
+.modal-table{{width:100%;border-collapse:collapse;font-size:11px}}
+.modal-table thead th{{
+  background:var(--surface2);padding:7px 10px;text-align:left;
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--text-2);
+  border-bottom:1px solid var(--border2);
+  position:sticky;top:0;
+}}
+.modal-table tbody tr{{border-bottom:1px solid var(--border)}}
+.modal-table tbody tr:hover{{background:#f8fafc}}
+.modal-table tbody tr.mrow-fail{{background:#fff8f8}}
+.modal-table tbody tr.mrow-fail:hover{{background:#fef2f2}}
+.modal-table td{{padding:7px 10px;white-space:nowrap}}
+.modal-table td.wrap{{white-space:normal;word-break:break-all;max-width:300px}}
+.mcell-code{{font-family:var(--mono);font-weight:700}}
+.mcell-ok{{color:var(--green)}}
+.mcell-err{{color:var(--red)}}
+
 /* ── Debug log panels ────────────────────────────────────────────────────── */
 .log-panels{{display:flex;flex-direction:column;gap:8px}}
 .log-details{{
@@ -1009,6 +1115,7 @@ footer{{
           <th class="num">Failure Rate</th>
           <th>Rating</th>
           <th>Result</th>
+          <th style="text-align:center">Logs</th>
         </tr>
       </thead>
       <tbody>{table_rows}</tbody>
@@ -1025,6 +1132,7 @@ footer{{
           <td class="num {'red-val' if not ov.err_ok else ''}">{ov.error_rate:.2f}%</td>
           <td><span class="rating {perf_cls}">{perf_text}</span></td>
           <td><span class="badge {verdict_cls}">{"✓ Pass" if ov.passed else "✗ Fail"}</span></td>
+          <td></td>
         </tr>
       </tfoot>
     </table>
@@ -1119,6 +1227,34 @@ footer{{
 </section>
 
 </div><!-- /container -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SAMPLE LOG MODAL
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="sampleModal" onclick="closeModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Sample Logs</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-summary" id="modalSummary"></div>
+    <div class="modal-body">
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time (UTC)</th>
+            <th>Duration</th>
+            <th>HTTP</th>
+            <th>Status</th>
+            <th>URL / Message</th>
+          </tr>
+        </thead>
+        <tbody id="modalTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      FOOTER
@@ -1257,6 +1393,60 @@ new Chart(document.getElementById('p90Chart'), {{
 
 
 {trend_chart_js}
+
+// ── Sample log modal ──────────────────────────────────────────────────────
+const modalData = {{}};
+{modal_data_js}
+
+function openModal(id) {{
+  const samples = modalData[id] || [];
+  const title   = document.querySelector(`[onclick="openModal('${{id}}')"]`)
+                    ?.closest('tr')?.querySelector('.label-cell')?.textContent || id;
+  document.getElementById('modalTitle').textContent = '👁  ' + title + ' — Sample Logs';
+
+  const passed = samples.filter(s => s.success).length;
+  const failed = samples.length - passed;
+  document.getElementById('modalSummary').innerHTML = `
+    <span class="modal-stat"><strong>${{samples.length}}</strong> samples</span>
+    <span class="modal-stat s-pass"><strong>${{passed}}</strong> passed</span>
+    <span class="modal-stat s-fail"><strong>${{failed}}</strong> failed</span>
+  `;
+
+  const tbody = document.getElementById('modalTableBody');
+  if (!samples.length) {{
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:16px;color:var(--text-3);font-style:italic">No sample data available for this test case.</td></tr>';
+  }} else {{
+    tbody.innerHTML = samples.map((s, i) => {{
+      const rowCls  = s.success ? '' : 'mrow-fail';
+      const codeCls = s.success ? 'mcell-ok' : 'mcell-err';
+      const status  = s.success
+        ? '<span style="color:var(--green);font-weight:700">✓ Pass</span>'
+        : '<span style="color:var(--red);font-weight:700">✗ Fail</span>';
+      const detail  = s.success
+        ? (s.url || '—')
+        : (s.message || s.url || '—');
+      const elapsed = s.elapsed ? s.elapsed + ' ms' : '—';
+      return `<tr class="${{rowCls}}">
+        <td style="color:var(--text-3);font-size:10px">${{i+1}}</td>
+        <td style="font-family:var(--mono);font-size:10px">${{s.ts || '—'}}</td>
+        <td style="font-family:var(--mono);text-align:right">${{elapsed}}</td>
+        <td class="mcell-code ${{codeCls}}">${{s.code || '—'}}</td>
+        <td>${{status}}</td>
+        <td class="wrap" style="color:${{s.success ? 'var(--text-2)' : 'var(--red)'}};font-size:11px">${{detail}}</td>
+      </tr>`;
+    }}).join('');
+  }}
+  document.getElementById('sampleModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}}
+
+function closeModal(e) {{
+  if (!e || e.target === document.getElementById('sampleModal')) {{
+    document.getElementById('sampleModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }}
+}}
+document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeModal(); }});
 </script>
 </body>
 </html>"""
@@ -1301,12 +1491,13 @@ def main() -> None:
             print("ERROR: No data found.", file=sys.stderr)
             sys.exit(2)
         tx, ov = build_stats(rows, args.sla, args.error_rate)
+        slogs  = build_sample_logs(rows)
         all_passed = print_terminal(tx, ov, sla_ms=args.sla, max_err=args.error_rate,
                                     env=args.env, run=args.run, users=args.users)
         if args.html:
             write_html(tx, ov, out=Path(args.html), sla_ms=args.sla,
                        max_err=args.error_rate, env=args.env, run=args.run,
-                       users=args.users, log_path=log_path)
+                       users=args.users, log_path=log_path, sample_logs=slogs)
             print(f"  HTML report → {args.html}")
     else:
         run_overalls: list[tuple[str, TxStats]] = []
