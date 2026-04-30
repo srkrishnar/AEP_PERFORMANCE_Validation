@@ -32,4 +32,4 @@ export PERF_DURATION="600"
 #   2. DevTools (F12) → Network tab → click any API request (e.g. /profile)
 #   3. Request Headers → Cookie → copy the entire value
 #   4. Paste below (one line, no quotes)
-export PERF_SESSION_COOKIE="i18next=en-US; x-user-id=6; x-consent=granted; ui_redirect_url=https://qa-aep.aziro.net; session_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrVTlpZXlVem1aTVhkVTdJTGFzVl9SMnFYWWlCZjRCS2lJWlZ5YWREV3FrIiwiYWVwX3VzZXJfaWQiOjYsInNjb3BlIjoiYWVwOnVzZXI6cmVhZCBhZXA6cHJvZmlsZTp3cml0ZSIsImlzcyI6InFhLWFlcC5hemlyby5uZXQiLCJhdWQiOlsiYWVwLXVzZXItc2VydmljZSJdLCJpYXQiOjE3Nzc0NjYzMTUsImV4cCI6MTc3NzQ2ODExNX0.SgpbEMb7Dqe-DRQE5wXf_8BugGY_JzbbZX03IGONlgk; X-Session-ID=d61763ea-7108-3eb1-9b82-0a7b37186a03"
+export PERF_SESSION_COOKIE=""
